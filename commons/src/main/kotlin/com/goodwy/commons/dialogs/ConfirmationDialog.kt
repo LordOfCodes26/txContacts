@@ -1,0 +1,184 @@
+package com.goodwy.commons.dialogs
+
+import android.app.Activity
+import androidx.appcompat.app.AlertDialog
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.DialogProperties
+import com.goodwy.commons.R
+import com.goodwy.commons.compose.alert_dialog.*
+import com.goodwy.commons.compose.extensions.MyDevices
+import com.goodwy.commons.compose.theme.AppThemeSurface
+import com.goodwy.commons.databinding.DialogMessageBinding
+import com.goodwy.commons.extensions.getAlertDialogBuilder
+import com.goodwy.commons.extensions.getProperBlurOverlayColor
+import com.goodwy.commons.extensions.getProperPrimaryColor
+import com.goodwy.commons.extensions.setupDialogStuff
+import eightbitlab.com.blurview.BlurTarget
+import eightbitlab.com.blurview.BlurView
+
+/**
+ * A simple dialog without any view, just a messageId, a positive button and optionally a negative button
+ *
+ * @param activity has to be activity context to avoid some Theme.AppCompat issues
+ * @param message the dialogs message, can be any String. If empty, messageId is used
+ * @param messageId the dialogs messageId ID. Used only if message is empty
+ * @param positive positive buttons text ID
+ * @param negative negative buttons text ID (optional)
+ * @param callback an anonymous function
+ */
+class ConfirmationDialog(
+    activity: Activity,
+    message: String = "",
+    messageId: Int = R.string.proceed_with_deletion, positive: Int = R.string.yes,
+    negative: Int = R.string.no,
+    val cancelOnTouchOutside: Boolean = true,
+    dialogTitle: String = "",
+    blurTarget: BlurTarget,
+    val callback: () -> Unit
+) {
+    private var dialog: AlertDialog? = null
+
+    init {
+        val view = DialogMessageBinding.inflate(activity.layoutInflater, null, false)
+        view.message.text = message.ifEmpty { activity.resources.getString(messageId) }
+
+        // Setup BlurView with the provided BlurTarget
+        val blurView = view.blurView
+        val decorView = activity.window.decorView
+        val windowBackground = decorView.background
+        
+        blurView.setOverlayColor(activity.getProperBlurOverlayColor())
+        blurView.setupWith(blurTarget)
+            .setFrameClearDrawable(windowBackground)
+            .setBlurRadius(8f)
+            .setBlurAutoUpdate(true)
+
+        // Setup custom buttons inside BlurView
+        val primaryColor = activity.getProperPrimaryColor()
+        
+        // Access buttons via findViewById in case binding hasn't been regenerated
+        val positiveButton = view.root.findViewById<com.google.android.material.button.MaterialButton>(R.id.positive_button)
+        val negativeButton = view.root.findViewById<com.google.android.material.button.MaterialButton>(R.id.negative_button)
+        val buttonsContainer = view.root.findViewById<android.widget.LinearLayout>(R.id.buttons_container)
+        
+        // Ensure buttons container is visible first
+        buttonsContainer?.visibility = android.view.View.VISIBLE
+        
+        if (positiveButton != null) {
+            positiveButton.visibility = android.view.View.VISIBLE
+            positiveButton.text = activity.resources.getString(positive)
+            positiveButton.setTextColor(primaryColor)
+            positiveButton.setOnClickListener { dialogConfirmed() }
+        }
+
+        if (negative != 0) {
+            negativeButton?.apply {
+                visibility = android.view.View.VISIBLE
+                text = activity.resources.getString(negative)
+                setTextColor(primaryColor)
+                setOnClickListener { dialog?.dismiss() }
+            }
+        } else {
+            negativeButton?.visibility = android.view.View.GONE
+        }
+
+        val builder = activity.getAlertDialogBuilder()
+
+        if (!cancelOnTouchOutside) {
+            builder.setOnCancelListener { dialog?.dismiss() }
+        }
+
+        builder.apply {
+            activity.setupDialogStuff(view.root, this, titleText = dialogTitle, cancelOnTouchOutside = cancelOnTouchOutside) { alertDialog ->
+                dialog = alertDialog
+            }
+        }
+    }
+
+    private fun dialogConfirmed() {
+        callback()
+        dialog?.dismiss()
+    }
+}
+
+@Composable
+fun ConfirmationAlertDialog(
+    alertDialogState: AlertDialogState,
+    modifier: Modifier = Modifier,
+    message: String = "",
+    messageId: Int? = R.string.proceed_with_deletion,
+    positive: Int? = R.string.yes,
+    negative: Int? = R.string.no,
+    cancelOnTouchOutside: Boolean = true,
+    dialogTitle: String = "",
+    callback: () -> Unit
+) {
+
+    androidx.compose.material3.AlertDialog(
+        containerColor = dialogContainerColor,
+        modifier = modifier
+            .dialogBorder(),
+        properties = DialogProperties(dismissOnClickOutside = cancelOnTouchOutside),
+        onDismissRequest = {
+            alertDialogState.hide()
+            callback()
+        },
+        shape = dialogShape,
+        tonalElevation = dialogElevation,
+        dismissButton = {
+            if (negative != null) {
+                TextButton(onClick = {
+                    alertDialogState.hide()
+                    callback()
+                }) {
+                    Text(text = stringResource(id = negative))
+                }
+            }
+        },
+        confirmButton = {
+            if (positive != null) {
+                TextButton(onClick = {
+                    alertDialogState.hide()
+                    callback()
+                }) {
+                    Text(text = stringResource(id = positive))
+                }
+            }
+        },
+        title = {
+            if (dialogTitle.isNotBlank() || dialogTitle.isNotEmpty()) {
+                Text(
+                    text = dialogTitle,
+                    color = dialogTextColor,
+                    fontSize = 21.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        },
+        text = {
+            Text(
+                modifier = Modifier.fillMaxWidth(),
+                text = message.ifEmpty { messageId?.let { stringResource(id = it) }.orEmpty() },
+                fontSize = 16.sp,
+                color = dialogTextColor,
+            )
+        }
+    )
+}
+
+@Composable
+@MyDevices
+private fun ConfirmationAlertDialogPreview() {
+    AppThemeSurface {
+        ConfirmationAlertDialog(
+            alertDialogState = rememberAlertDialogState()
+        ) {}
+    }
+}

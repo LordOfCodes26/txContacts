@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<eightbitlab.com.blurview.BlurView
+    android:id="@+id/blurView"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <com.goodwy.commons.views.MyTextView
+        android:id="@+id/dialog_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="@style/DialogTitleStyle"
+        android:visibility="gone" />
+
+<ScrollView
+    android:id="@+id/whats_new_scrollview"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:id="@+id/whats_new_holder"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingLeft="@dimen/activity_margin"
+        android:paddingRight="@dimen/activity_margin"
+        android:paddingTop="@dimen/activity_margin">
+
+        <com.goodwy.commons.views.MyTextView
+            android:id="@+id/whats_new_disclaimer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="@dimen/activity_margin"
+            android:alpha="0.7"
+            android:text="@string/whats_new_disclaimer"
+            android:textSize="@dimen/smaller_text_size"/>
+    </LinearLayout>
+</ScrollView>
+
+    <LinearLayout
+        android:id="@+id/buttons_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="@style/DialogButtonContainerStyle">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/positive_button"
+            style="@style/Widget.Material3.Button.TextButton.Dialog"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="0"
+            android:text="@string/ok"
+            android:visibility="visible" />
+
+    </LinearLayout>
+</eightbitlab.com.blurview.BlurView>

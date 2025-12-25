@@ -77,9 +77,6 @@ android {
     }
 
     buildTypes {
-        debug {
-            applicationIdSuffix = ".debug"
-        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -151,18 +148,25 @@ detekt {
 
 dependencies {
     implementation(libs.androidx.swiperefreshlayout)
-    implementation(libs.autofittextview)
-    implementation(libs.ezvcard)
-    implementation(libs.indicatorfastscroll)
+    implementation(libs.autofit.text.view)
+    implementation(libs.ez.vcard)
+    implementation(libs.indicator.fast.scroll)
     implementation(libs.bundles.room)
     ksp(libs.androidx.room.compiler)
     detektPlugins(libs.compose.detekt)
 
     //Goodwy
-    implementation(libs.goodwy.commons)
+//    implementation(libs.goodwy.commons)
+    api(project(":commons"))
+
     implementation(libs.behavio.rule)
     implementation(libs.rx.animation)
     implementation(libs.bundles.lifecycle)
     implementation(libs.rx.java)
     implementation(libs.swipe.action)
+
+
+    // Circular Countdown
+    implementation("com.github.douglasspgyn:CircularCountdown:0.3.0")
+    implementation("com.github.Dimezis:BlurView:version-3.2.0")
 }
