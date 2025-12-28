@@ -40,8 +40,8 @@ fun SimpleActivity.startCallIntent(recipient: String) {
 }
 
 fun SimpleActivity.tryStartCallRecommendation(contact: Contact) {
-    val simpleDialer = "com.goodwy.dialer"
-    val simpleDialerDebug = "com.goodwy.dialer.debug"
+    val simpleDialer = "com.android.dialer"
+    val simpleDialerDebug = "com.android.dialer.debug"
     if ((0..config.appRecommendationDialogCount).random() == 2 && (!isPackageInstalled(simpleDialer) && !isPackageInstalled(simpleDialerDebug))) {
         val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
             ?: throw IllegalStateException("mainBlurTarget not found")
@@ -220,7 +220,9 @@ fun SimpleActivity.tryImportContactsFromFile(uri: Uri, callback: (Boolean) -> Un
 }
 
 fun SimpleActivity.showImportContactsDialog(path: String, callback: (Boolean) -> Unit) {
-    ImportContactsDialog(this, path, callback)
+    val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+        ?: throw IllegalStateException("mainBlurTarget not found")
+    ImportContactsDialog(this, path, blurTarget, callback)
 }
 
 fun SimpleActivity.launchAbout() {

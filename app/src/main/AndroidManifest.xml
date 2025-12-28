@@ -22,8 +22,8 @@
         tools:node="remove" />
 
     <queries>
-        <package android:name="com.goodwy.dialer.debug" />
-        <package android:name="com.goodwy.dialer" />
+        <package android:name="com.android.dialer.debug" />
+        <package android:name="com.android.dialer" />
         <package android:name="com.android.contacts.debug" />
         <package android:name="com.android.contacts" />
         <package android:name="com.goodwy.smsmessenger.debug" />

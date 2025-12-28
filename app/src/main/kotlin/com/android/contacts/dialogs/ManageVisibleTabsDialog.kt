@@ -10,8 +10,11 @@ import com.goodwy.commons.views.MyAppCompatCheckbox
 import com.android.contacts.R
 import com.android.contacts.extensions.config
 import com.android.contacts.helpers.ALL_TABS_MASK
+import com.goodwy.commons.extensions.getProperBlurOverlayColor
+import eightbitlab.com.blurview.BlurTarget
+import eightbitlab.com.blurview.BlurView
 
-class ManageVisibleTabsDialog(val activity: BaseSimpleActivity) {
+class ManageVisibleTabsDialog(val activity: BaseSimpleActivity, blurTarget: BlurTarget) {
     private var view = activity.layoutInflater.inflate(R.layout.dialog_manage_visible_tabs, null)
     private val tabs = LinkedHashMap<Int, Int>()
 
@@ -26,6 +29,17 @@ class ManageVisibleTabsDialog(val activity: BaseSimpleActivity) {
         for ((key, value) in tabs) {
             view.findViewById<MyAppCompatCheckbox>(value).isChecked = showTabs and key != 0
         }
+
+        // Setup BlurView with the provided BlurTarget
+        val blurView = view.findViewById<BlurView>(R.id.blurView)
+        val decorView = activity.window.decorView
+        val windowBackground = decorView.background
+        
+        blurView.setOverlayColor(activity.getProperBlurOverlayColor())
+        blurView.setupWith(blurTarget)
+            .setFrameClearDrawable(windowBackground)
+            .setBlurRadius(8f)
+            .setBlurAutoUpdate(true)
 
         activity.getAlertDialogBuilder()
             .setPositiveButton(com.goodwy.commons.R.string.ok) { dialog, which -> dialogConfirmed() }

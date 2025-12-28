@@ -11,8 +11,11 @@ import com.goodwy.commons.models.contacts.SocialAction
 import com.android.contacts.databinding.DialogChooseSocialBinding
 import com.android.contacts.databinding.ItemChooseSocialBinding
 import com.android.contacts.extensions.getPackageDrawable
+import com.goodwy.commons.extensions.getProperBlurOverlayColor
+import eightbitlab.com.blurview.BlurTarget
+import eightbitlab.com.blurview.BlurView
 
-class ChooseSocialDialog(val activity: Activity, actions: ArrayList<SocialAction>, val callback: (action: SocialAction) -> Unit) {
+class ChooseSocialDialog(val activity: Activity, actions: ArrayList<SocialAction>, blurTarget: BlurTarget, val callback: (action: SocialAction) -> Unit) {
     private lateinit var dialog: AlertDialog
 
     init {
@@ -36,6 +39,17 @@ class ChooseSocialDialog(val activity: Activity, actions: ArrayList<SocialAction
 
             binding.dialogChooseSocial.addView(item.root, RadioGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         }
+
+        // Setup BlurView with the provided BlurTarget
+        val blurView = binding.blurView
+        val decorView = activity.window.decorView
+        val windowBackground = decorView.background
+        
+        blurView.setOverlayColor(activity.getProperBlurOverlayColor())
+        blurView.setupWith(blurTarget)
+            .setFrameClearDrawable(windowBackground)
+            .setBlurRadius(8f)
+            .setBlurAutoUpdate(true)
 
         val builder = activity.getAlertDialogBuilder()
 

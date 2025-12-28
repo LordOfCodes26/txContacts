@@ -12,8 +12,11 @@ import com.android.contacts.activities.SimpleActivity
 import com.android.contacts.adapters.FilterContactSourcesAdapter
 import com.android.contacts.databinding.DialogFilterContactSourcesBinding
 import com.android.contacts.extensions.config
+import com.goodwy.commons.extensions.getProperBlurOverlayColor
+import eightbitlab.com.blurview.BlurTarget
+import eightbitlab.com.blurview.BlurView
 
-class FilterContactSourcesDialog(val activity: SimpleActivity, private val callback: () -> Unit) {
+class FilterContactSourcesDialog(val activity: SimpleActivity, private val blurTarget: BlurTarget, private val callback: () -> Unit) {
     private var dialog: AlertDialog? = null
     private val binding = DialogFilterContactSourcesBinding.inflate(activity.layoutInflater)
     private var contactSources = ArrayList<ContactSource>()
@@ -58,6 +61,16 @@ class FilterContactSourcesDialog(val activity: SimpleActivity, private val callb
             binding.filterContactSourcesList.adapter = FilterContactSourcesAdapter(activity, contactSourcesWithCount, selectedSources)
 
             if (dialog == null) {
+                // Setup BlurView with the provided BlurTarget
+                val blurView = binding.blurView
+                val decorView = activity.window.decorView
+                val windowBackground = decorView.background
+                
+                blurView.setOverlayColor(activity.getProperBlurOverlayColor())
+                blurView.setupWith(blurTarget)
+                    .setFrameClearDrawable(windowBackground)
+                    .setBlurRadius(8f)
+                    .setBlurAutoUpdate(true)
                 activity.getAlertDialogBuilder()
                     .setPositiveButton(com.goodwy.commons.R.string.ok) { dialogInterface, i -> confirmContactSources() }
                     .setNegativeButton(com.goodwy.commons.R.string.cancel, null)

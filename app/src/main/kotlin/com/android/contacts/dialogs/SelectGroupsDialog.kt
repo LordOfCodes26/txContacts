@@ -12,8 +12,11 @@ import com.android.contacts.activities.SimpleActivity
 import com.android.contacts.databinding.DialogSelectGroupsBinding
 import com.android.contacts.databinding.ItemCheckboxBinding
 import com.android.contacts.databinding.ItemTextviewBinding
+import com.goodwy.commons.extensions.getProperBlurOverlayColor
+import eightbitlab.com.blurview.BlurTarget
+import eightbitlab.com.blurview.BlurView
 
-class SelectGroupsDialog(val activity: SimpleActivity, val selectedGroups: ArrayList<Group>, val callback: (newGroups: ArrayList<Group>) -> Unit) {
+class SelectGroupsDialog(val activity: SimpleActivity, val selectedGroups: ArrayList<Group>, private val blurTarget: BlurTarget, val callback: (newGroups: ArrayList<Group>) -> Unit) {
     private val binding = DialogSelectGroupsBinding.inflate(activity.layoutInflater)
     private val checkboxes = ArrayList<MyAppCompatCheckbox>()
     private var groups = ArrayList<Group>()
@@ -35,6 +38,17 @@ class SelectGroupsDialog(val activity: SimpleActivity, val selectedGroups: Array
 
         if (groups.isEmpty()) addNoGroupText()
         addCreateNewGroupButton()
+
+        // Setup BlurView with the provided BlurTarget
+        val blurView = binding.blurView
+        val decorView = activity.window.decorView
+        val windowBackground = decorView.background
+        
+        blurView.setOverlayColor(activity.getProperBlurOverlayColor())
+        blurView.setupWith(blurTarget)
+            .setFrameClearDrawable(windowBackground)
+            .setBlurRadius(8f)
+            .setBlurAutoUpdate(true)
 
         activity.getAlertDialogBuilder()
             .setPositiveButton(com.goodwy.commons.R.string.ok) { dialog, which -> dialogConfirmed() }
@@ -82,7 +96,9 @@ class SelectGroupsDialog(val activity: SimpleActivity, val selectedGroups: Array
             setTextColor(activity.getProperPrimaryColor())
             binding.dialogGroupsHolder.addView(this)
             setOnClickListener {
-                CreateNewGroupDialog(activity) {
+                val blurTarget = activity.findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+                    ?: throw IllegalStateException("mainBlurTarget not found")
+                CreateNewGroupDialog(activity, blurTarget) {
                     selectedGroups.add(it)
                     groups.add(it)
                     binding.dialogGroupsHolder.removeViewAt(binding.dialogGroupsHolder.childCount - 1)

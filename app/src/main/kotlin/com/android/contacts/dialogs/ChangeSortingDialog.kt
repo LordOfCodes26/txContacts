@@ -8,18 +8,60 @@ import com.goodwy.commons.helpers.*
 import com.android.contacts.R
 import com.android.contacts.databinding.DialogChangeSortingBinding
 import com.android.contacts.extensions.config
+import com.goodwy.commons.extensions.getProperBlurOverlayColor
+import com.goodwy.commons.extensions.getProperPrimaryColor
+import eightbitlab.com.blurview.BlurTarget
+import eightbitlab.com.blurview.BlurView
 
-class ChangeSortingDialog(val activity: BaseSimpleActivity, private val showCustomSorting: Boolean = false, private val callback: () -> Unit) {
+class ChangeSortingDialog(val activity: BaseSimpleActivity, private val showCustomSorting: Boolean = false, blurTarget: BlurTarget, private val callback: () -> Unit) {
+    private var dialog: androidx.appcompat.app.AlertDialog? = null
     private var currSorting = 0
     private var config = activity.config
     private val binding = DialogChangeSortingBinding.inflate(activity.layoutInflater)
 
     init {
+        // Setup BlurView with the provided BlurTarget
+        val blurView = binding.blurView
+        val decorView = activity.window.decorView
+        val windowBackground = decorView.background
+        
+        blurView.setOverlayColor(activity.getProperBlurOverlayColor())
+        blurView.setupWith(blurTarget)
+            .setFrameClearDrawable(windowBackground)
+            .setBlurRadius(8f)
+            .setBlurAutoUpdate(true)
+
+        // Setup title inside BlurView
+        val titleTextView = binding.root.findViewById<com.goodwy.commons.views.MyTextView>(com.goodwy.commons.R.id.dialog_title)
+        titleTextView?.apply {
+            visibility = android.view.View.VISIBLE
+            setText(com.goodwy.commons.R.string.sort_by)
+        }
+
+        // Setup custom buttons inside BlurView
+        val primaryColor = activity.getProperPrimaryColor()
+        val positiveButton = binding.root.findViewById<com.google.android.material.button.MaterialButton>(com.goodwy.commons.R.id.positive_button)
+        val negativeButton = binding.root.findViewById<com.google.android.material.button.MaterialButton>(com.goodwy.commons.R.id.negative_button)
+        val buttonsContainer = binding.root.findViewById<android.widget.LinearLayout>(com.goodwy.commons.R.id.buttons_container)
+
+        buttonsContainer?.visibility = android.view.View.VISIBLE
+        positiveButton?.apply {
+            visibility = android.view.View.VISIBLE
+            setTextColor(primaryColor)
+            setOnClickListener { dialogConfirmed() }
+        }
+        negativeButton?.apply {
+            visibility = android.view.View.VISIBLE
+            setTextColor(primaryColor)
+            setOnClickListener { dialog?.dismiss() }
+        }
+
         activity.getAlertDialogBuilder()
-            .setPositiveButton(com.goodwy.commons.R.string.ok) { dialog, which -> dialogConfirmed() }
-            .setNegativeButton(com.goodwy.commons.R.string.cancel, null)
             .apply {
-                activity.setupDialogStuff(binding.root, this, com.goodwy.commons.R.string.sort_by)
+                // Pass empty titleText to prevent setupDialogStuff from adding title outside BlurView
+                activity.setupDialogStuff(binding.root, this, titleText = "") { alertDialog ->
+                    dialog = alertDialog
+                }
             }
 
         currSorting = if (showCustomSorting && config.isCustomOrderSelected) {
@@ -100,5 +142,6 @@ class ChangeSortingDialog(val activity: BaseSimpleActivity, private val showCust
         config.sortingSymbolsFirst = binding.sortingDialogSymbolsFirstCheckbox.isChecked
 
         callback()
+        dialog?.dismiss()
     }
 }

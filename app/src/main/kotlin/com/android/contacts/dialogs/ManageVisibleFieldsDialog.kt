@@ -7,8 +7,11 @@ import com.goodwy.commons.helpers.*
 import com.goodwy.commons.views.MyAppCompatCheckbox
 import com.android.contacts.R
 import com.android.contacts.extensions.config
+import com.goodwy.commons.extensions.getProperBlurOverlayColor
+import eightbitlab.com.blurview.BlurTarget
+import eightbitlab.com.blurview.BlurView
 
-class ManageVisibleFieldsDialog(val activity: BaseSimpleActivity, val callback: (hasSomethingChanged: Boolean) -> Unit) {
+class ManageVisibleFieldsDialog(val activity: BaseSimpleActivity, blurTarget: BlurTarget, val callback: (hasSomethingChanged: Boolean) -> Unit) {
     private var view = activity.layoutInflater.inflate(R.layout.dialog_manage_visible_fields, null)
     private val fields = LinkedHashMap<Int, Int>()
 
@@ -39,6 +42,17 @@ class ManageVisibleFieldsDialog(val activity: BaseSimpleActivity, val callback: 
         for ((key, value) in fields) {
             view.findViewById<MyAppCompatCheckbox>(value).isChecked = showContactFields and key != 0
         }
+
+        // Setup BlurView with the provided BlurTarget
+        val blurView = view.findViewById<BlurView>(R.id.blurView)
+        val decorView = activity.window.decorView
+        val windowBackground = decorView.background
+        
+        blurView.setOverlayColor(activity.getProperBlurOverlayColor())
+        blurView.setupWith(blurTarget)
+            .setFrameClearDrawable(windowBackground)
+            .setBlurRadius(8f)
+            .setBlurAutoUpdate(true)
 
         activity.getAlertDialogBuilder()
             .setPositiveButton(com.goodwy.commons.R.string.ok) { dialog, which -> dialogConfirmed() }

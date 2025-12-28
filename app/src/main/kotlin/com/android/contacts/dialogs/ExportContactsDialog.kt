@@ -12,10 +12,12 @@ import com.android.contacts.activities.SimpleActivity
 import com.android.contacts.adapters.FilterContactSourcesAdapter
 import com.android.contacts.databinding.DialogExportContactsBinding
 import com.android.contacts.extensions.config
+import eightbitlab.com.blurview.BlurTarget
+import eightbitlab.com.blurview.BlurView
 import java.io.File
 
 class ExportContactsDialog(
-    val activity: SimpleActivity, val path: String, val hidePath: Boolean,
+    val activity: SimpleActivity, val path: String, val hidePath: Boolean, blurTarget: BlurTarget,
     private val callback: (file: File, ignoredContactSources: HashSet<String>) -> Unit
 ) {
     private var ignoreClicks = false
@@ -56,6 +58,17 @@ class ExportContactsDialog(
                 processDataIfReady(this)
             }
         }
+
+        // Setup BlurView with the provided BlurTarget
+        val blurView = binding.blurView
+        val decorView = activity.window.decorView
+        val windowBackground = decorView.background
+        
+        blurView.setOverlayColor(activity.getProperBlurOverlayColor())
+        blurView.setupWith(blurTarget)
+            .setFrameClearDrawable(windowBackground)
+            .setBlurRadius(8f)
+            .setBlurAutoUpdate(true)
 
         activity.getAlertDialogBuilder()
             .setPositiveButton(com.goodwy.commons.R.string.ok, null)

@@ -111,12 +111,15 @@ class GroupContactsActivity : SimpleActivity(), RemoveFromGroupListener, Refresh
     }
 
     private fun fabClicked() {
+        val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+            ?: throw IllegalStateException("mainBlurTarget not found")
         SelectContactsDialog(
             this,
             allContacts,
             true,
             false,
-            groupContacts
+            groupContacts,
+            blurTarget
         ) { addedContacts, removedContacts ->
             ensureBackgroundThread {
                 addContactsToGroup(addedContacts, group.id!!)
@@ -165,7 +168,9 @@ class GroupContactsActivity : SimpleActivity(), RemoveFromGroupListener, Refresh
     }
 
     private fun renameGroup() {
-        RenameGroupDialog(this, group) {
+        val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+            ?: throw IllegalStateException("mainBlurTarget not found")
+        RenameGroupDialog(this, group, blurTarget) {
             binding.groupContactsToolbar.title = group.title
         }
     }

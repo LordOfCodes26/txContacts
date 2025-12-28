@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/select_contact_holder"
+<eightbitlab.com.blurview.BlurView
+    android:id="@+id/blurView"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="match_parent"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+    <RelativeLayout
+        android:id="@+id/select_contact_holder"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
     <com.goodwy.commons.views.MySearchMenuTop
         android:id="@+id/selectContactSearchView"
@@ -61,4 +66,5 @@
         android:layout_marginEnd="@dimen/activity_margin"
         android:layout_toStartOf="@+id/letter_fastscroller" />
 
-</RelativeLayout>
+    </RelativeLayout>
+</eightbitlab.com.blurview.BlurView>

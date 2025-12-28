@@ -13,11 +13,13 @@ import com.android.contacts.R
 import com.android.contacts.activities.SimpleActivity
 import com.android.contacts.adapters.SelectContactsAdapter
 import com.android.contacts.databinding.DialogSelectContactBinding
+import eightbitlab.com.blurview.BlurTarget
+import eightbitlab.com.blurview.BlurView
 import java.util.Locale
 
 class SelectContactsDialog(
     val activity: SimpleActivity, initialContacts: ArrayList<Contact>, val allowSelectMultiple: Boolean, val showOnlyContactsWithNumber: Boolean,
-    selectContacts: ArrayList<Contact>? = null, val callback: (addedContacts: ArrayList<Contact>, removedContacts: ArrayList<Contact>) -> Unit
+    selectContacts: ArrayList<Contact>? = null, blurTarget: BlurTarget, val callback: (addedContacts: ArrayList<Contact>, removedContacts: ArrayList<Contact>) -> Unit
 ) {
     private var dialog: AlertDialog? = null
     private val binding = DialogSelectContactBinding.inflate(activity.layoutInflater)
@@ -71,6 +73,17 @@ class SelectContactsDialog(
 
         configureSearchView()
         setupFastscroller(allContacts)
+
+        // Setup BlurView with the provided BlurTarget
+        val blurView = binding.blurView
+        val decorView = activity.window.decorView
+        val windowBackground = decorView.background
+        
+        blurView.setOverlayColor(activity.getProperBlurOverlayColor())
+        blurView.setupWith(blurTarget)
+            .setFrameClearDrawable(windowBackground)
+            .setBlurRadius(8f)
+            .setBlurAutoUpdate(true)
 
         val builder = activity.getAlertDialogBuilder()
         if (allowSelectMultiple) {

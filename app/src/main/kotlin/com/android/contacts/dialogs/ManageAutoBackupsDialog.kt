@@ -19,9 +19,11 @@ import com.android.contacts.extensions.config
 import com.android.contacts.extensions.getFormattedTime
 import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
+import eightbitlab.com.blurview.BlurTarget
+import eightbitlab.com.blurview.BlurView
 import java.io.File
 
-class ManageAutoBackupsDialog(private val activity: SimpleActivity, onSuccess: () -> Unit) {
+class ManageAutoBackupsDialog(private val activity: SimpleActivity, blurTarget: BlurTarget, onSuccess: () -> Unit) {
     private val binding = DialogManageAutomaticBackupsBinding.inflate(activity.layoutInflater)
     private val config = activity.config
     private var backupFolder = config.autoBackupFolder
@@ -42,11 +44,15 @@ class ManageAutoBackupsDialog(private val activity: SimpleActivity, onSuccess: (
 
             backupContactsFilename.setText(filename)
             backupContactsFilenameHint.setEndIconOnClickListener {
-                DateTimePatternInfoDialog(activity)
+                val blurTarget = activity.findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+                    ?: throw IllegalStateException("mainBlurTarget not found")
+                DateTimePatternInfoDialog(activity, blurTarget)
             }
 
             backupContactsFilenameHint.setEndIconOnLongClickListener {
-                DateTimePatternInfoDialog(activity)
+                val blurTarget = activity.findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+                    ?: throw IllegalStateException("mainBlurTarget not found")
+                DateTimePatternInfoDialog(activity, blurTarget)
                 true
             }
 
@@ -123,6 +129,17 @@ class ManageAutoBackupsDialog(private val activity: SimpleActivity, onSuccess: (
                 }
             }
         }
+
+        // Setup BlurView with the provided BlurTarget
+        val blurView = binding.blurView
+        val decorView = activity.window.decorView
+        val windowBackground = decorView.background
+        
+        blurView.setOverlayColor(activity.getProperBlurOverlayColor())
+        blurView.setupWith(blurTarget)
+            .setFrameClearDrawable(windowBackground)
+            .setBlurRadius(8f)
+            .setBlurAutoUpdate(true)
 
         activity.getAlertDialogBuilder()
             .setPositiveButton(com.goodwy.commons.R.string.ok, null)

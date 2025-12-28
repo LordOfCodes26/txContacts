@@ -97,7 +97,9 @@ class GroupsAdapter(
 
     private fun renameGroup() {
         val group = getItemWithKey(selectedKeys.first()) ?: return
-        RenameGroupDialog(activity, group) {
+        val blurTarget = activity.findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+            ?: throw IllegalStateException("mainBlurTarget not found")
+        RenameGroupDialog(activity, group, blurTarget) {
             finishActMode()
             refreshListener?.refreshContacts(TAB_GROUPS)
         }

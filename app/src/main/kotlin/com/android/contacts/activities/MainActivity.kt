@@ -83,7 +83,6 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
     private var storedShowTabs = 0
     private var storedBackgroundColor = 0
     private var currentOldScrollY = 0
-    private var isSpeechToTextAvailable = false
     private val binding by viewBinding(ActivityMainBinding::inflate)
     
     // Cached fragment references to avoid repeated findViewById calls
@@ -165,7 +164,6 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
         binding.mainAddButton.setImageDrawable(addIcon)
 
         updateTextColors(binding.mainCoordinator)
-//        setupTabColors()
         binding.mainMenu.updateColors(
             background = getStartRequiredStatusBarColor(),
             scrollOffset = scrollingView?.computeVerticalScrollOffset() ?: 0
@@ -227,6 +225,7 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
 
     override fun onDestroy() {
         super.onDestroy()
+        mainHandler.removeCallbacksAndMessages(null)
         if (!isChangingConfigurations) {
             ContactsDatabase.destroyInstance()
         }
@@ -277,30 +276,7 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
     private fun setupOptionsMenu() {
         binding.mainMenu.apply {
             requireToolbar().inflateMenu(R.menu.menu)
-//            toggleHideOnScroll(false)
-            /*if (config.bottomNavigationBar) {
-                if (baseConfig.useSpeechToText) {
-                    isSpeechToTextAvailable = isSpeechToTextAvailable()
-                    showSpeechToText = isSpeechToTextAvailable
-                }
-
-                setupMenu()
-
-                onSpeechToTextClickListener = {
-                    speechToText()
-                }
-
-                onSearchClosedListener = {
-                    getAllFragments().forEach {
-                        it?.onSearchQueryChanged("")
-                    }
-                }
-
-                onSearchTextChangedListener = { text ->
-                    getCurrentFragment()?.onSearchQueryChanged(text)
-                    clearSearch()
-                }
-            } else*/ setupSearch(requireToolbar().menu)
+            setupSearch(requireToolbar().menu)
             requireToolbar().setOnMenuItemClickListener { menuItem ->
                 when (menuItem.itemId) {
                     R.id.sort -> showSortingDialog(showCustomSorting = getCurrentFragment() is FavoritesFragment)
@@ -318,25 +294,20 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
     }
 
     private fun changeViewType() {
-//        ChangeViewTypeDialog(this) {
-//            refreshMenuItems()
-//            getFavoritesFragment()?.updateFavouritesAdapter()
-//        }
         config.viewType = if (config.viewType == VIEW_TYPE_LIST) VIEW_TYPE_GRID else VIEW_TYPE_LIST
         refreshMenuItems()
         getFavoritesFragment()?.updateFavouritesAdapter()
     }
 
     private fun changeColumnCount() {
-        val items = ArrayList<RadioItem>()
-        for (i in 1..CONTACTS_GRID_MAX_COLUMNS_COUNT) {
-            items.add(RadioItem(i, resources.getQuantityString(com.goodwy.commons.R.plurals.column_counts, i, i)))
+        val items = (1..CONTACTS_GRID_MAX_COLUMNS_COUNT).map { i ->
+            RadioItem(i, resources.getQuantityString(com.goodwy.commons.R.plurals.column_counts, i, i))
         }
 
         val currentColumnCount = config.contactsGridColumnCount
         val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
             ?: throw IllegalStateException("mainBlurTarget not found")
-        RadioGroupDialog(this, items, currentColumnCount, blurTarget = blurTarget) {
+        RadioGroupDialog(this, items as ArrayList<RadioItem>, currentColumnCount, blurTarget = blurTarget) {
             val newColumnCount = it as Int
             if (currentColumnCount != newColumnCount) {
                 config.contactsGridColumnCount = newColumnCount
@@ -463,14 +434,6 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
         })
     }
 
-//    private fun getSearchString(): Int {
-//        return when (getCurrentFragment()) {
-//            findViewById<FavoritesFragment>(R.id.favorites_fragment) -> R.string.search_favorites
-//            findViewById<ContactsFragment>(R.id.contacts_fragment) -> R.string.search_contacts
-//            else -> R.string.search_groups
-//        }
-//    }
-
     @SuppressLint("NewApi")
     private fun checkShortcuts() {
         val iconColor = getProperPrimaryColor()
@@ -503,22 +466,25 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
     }
 
     private fun getCurrentFragment(): MyViewPagerFragment<*>? {
+        val currentItem = binding.viewPager.currentItem
         val showTabs = config.showTabs
-        val fragments = arrayListOf<MyViewPagerFragment<*>>()
+        var fragmentIndex = 0
 
         if (showTabs and TAB_FAVORITES != 0) {
-            getFavoritesFragment()?.let { fragments.add(it) }
+            if (fragmentIndex == currentItem) return getFavoritesFragment()
+            fragmentIndex++
         }
 
         if (showTabs and TAB_CONTACTS != 0) {
-            getContactsFragment()?.let { fragments.add(it) }
+            if (fragmentIndex == currentItem) return getContactsFragment()
+            fragmentIndex++
         }
 
         if (showTabs and TAB_GROUPS != 0) {
-            getGroupsFragment()?.let { fragments.add(it) }
+            if (fragmentIndex == currentItem) return getGroupsFragment()
         }
 
-        return fragments.getOrNull(binding.viewPager.currentItem)
+        return null
     }
 
     private fun setupTabColors() {
@@ -585,7 +551,6 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
 
             val lastUsedPage = getDefaultTab()
             binding.mainTopTabsHolder.apply {
-                //background = ColorDrawable(getProperBackgroundColor())
                 setSelectedTabIndicatorColor(getProperBackgroundColor())
                 getTabAt(lastUsedPage)?.select()
                 getTabAt(lastUsedPage)?.icon?.applyColorFilter(properPrimaryColor)
@@ -627,52 +592,6 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
 
     private fun getInactiveTabIndexes(activeIndex: Int) = (0 until binding.mainTabsHolder.tabCount).filter { it != activeIndex }
 
-    private fun getSelectedTabDrawableIds(): ArrayList<Int> {
-        val showTabs = config.showTabs
-        val icons = ArrayList<Int>()
-
-        if (showTabs and TAB_FAVORITES != 0) {
-            icons.add(R.drawable.ic_star_vector_scaled)
-        }
-
-        if (showTabs and TAB_CONTACTS != 0) {
-            icons.add(R.drawable.ic_person_rounded_scaled)
-        }
-
-        if (showTabs and TAB_GROUPS != 0) {
-            icons.add(R.drawable.ic_people_rounded)
-        }
-
-        return icons
-    }
-
-    private fun getDeselectedTabDrawableIds(): ArrayList<Int> {
-        val showTabs = config.showTabs
-        val icons = ArrayList<Int>()
-
-        if (showTabs and TAB_FAVORITES != 0) {
-            icons.add(com.goodwy.commons.R.drawable.ic_star_vector)
-        }
-
-        if (showTabs and TAB_CONTACTS != 0) {
-            icons.add(com.goodwy.commons.R.drawable.ic_person_rounded)
-        }
-
-        if (showTabs and TAB_GROUPS != 0) {
-            icons.add(R.drawable.ic_people_rounded_scaled)
-        }
-
-        return icons
-    }
-
-    private fun getTabIconResId(position: Int): Int {
-        return when (position) {
-            LOCATION_FAVORITES_TAB -> com.goodwy.commons.R.drawable.ic_star_vector
-            LOCATION_CONTACTS_TAB -> com.goodwy.commons.R.drawable.ic_person_rounded
-            else -> R.drawable.ic_people_rounded
-        }
-    }
-
     private fun initFragments() {
         binding.viewPager.offscreenPageLimit = 2 //tabsList.size - 1
         binding.viewPager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
@@ -707,10 +626,12 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
         }
 
         binding.mainAddButton.setOnClickListener {
-            when (getCurrentFragment()) {
-                getFavoritesFragment() -> getFavoritesFragment()?.fabClicked()
-                getContactsFragment() -> getContactsFragment()?.fabClicked()
-                getGroupsFragment() -> getGroupsFragment()?.fabClicked()
+            getCurrentFragment()?.let { fragment ->
+                when (fragment) {
+                    is FavoritesFragment -> fragment.fabClicked()
+                    is ContactsFragment -> fragment.fabClicked()
+                    is GroupsFragment -> fragment.fabClicked()
+                }
             }
         }
 
@@ -836,15 +757,15 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
     }
 
     private fun setupTabs() {
-        // bottom tab bar
         binding.viewPager.adapter = null
         binding.mainTabsHolder.removeAllTabs()
+        
         tabsList.forEachIndexed { index, value ->
             if (config.showTabs and value != 0) {
-                val tab = binding.mainTabsHolder.newTab()
-                tab.setIcon(getTabIconRes(index))
-                tab.setText(getTabLabelFromConfig(index))
-                binding.mainTabsHolder.addTab(tab)
+                binding.mainTabsHolder.newTab().apply {
+                    setIcon(getTabIconRes(index))
+                    setText(getTabLabelFromConfig(index))
+                }.also { binding.mainTabsHolder.addTab(it) }
             }
         }
 
@@ -862,11 +783,6 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
 
                 binding.viewPager.currentItem = it.position
 
-//                val lastPosition = binding.mainTabsHolder.tabCount - 1
-//                if (it.position == lastPosition && config.showTabs and TAB_CALL_HISTORY > 0) {
-//                    clearMissedCalls()
-//                }
-
                 if (config.openSearch) {
                     if (getCurrentFragment() is ContactsFragment) {
                         binding.mainMenu.requestFocusAndShowKeyboard()
@@ -882,13 +798,17 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
     }
 
     private fun showSortingDialog(showCustomSorting: Boolean) {
-        ChangeSortingDialog(this, showCustomSorting) {
+        val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+            ?: throw IllegalStateException("mainBlurTarget not found")
+        ChangeSortingDialog(this, showCustomSorting, blurTarget) {
             refreshContacts(TAB_CONTACTS or TAB_FAVORITES)
         }
     }
 
     fun showFilterDialog() {
-        FilterContactSourcesDialog(this) {
+        val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+            ?: throw IllegalStateException("mainBlurTarget not found")
+        FilterContactSourcesDialog(this, blurTarget) {
             getContactsFragment()?.forceListRedraw = true
             refreshContacts(TAB_CONTACTS or TAB_FAVORITES)
         }
@@ -896,8 +816,8 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
 
     private fun launchDialpad() {
         hideKeyboard()
-        val simpleDialer = "com.goodwy.dialer"
-        val simpleDialerDebug = "com.goodwy.dialer.debug"
+        val simpleDialer = "com.android.dialer"
+        val simpleDialerDebug = "com.android.dialer"
         if ((0..config.appRecommendationDialogCount).random() == 2 && (!isPackageInstalled(simpleDialer) && !isPackageInstalled(simpleDialerDebug))) {
             runOnUiThread {
                 val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
@@ -934,7 +854,11 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
 
         if (binding.viewPager.adapter == null) {
             binding.viewPager.adapter = ViewPagerAdapter(this, tabsList, config.showTabs)
-            binding.viewPager.currentItem = getDefaultTab()
+            mainHandler.post {
+                val index = getDefaultTab()
+                binding.viewPager.setCurrentItem(index, false)
+                // onPageSelected callback will automatically select the tab in mainTabsHolder
+            }
         }
 
         ContactsHelper(this).getContacts { contacts ->
@@ -943,6 +867,7 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
                 return@getContacts
             }
 
+            // Batch fragment updates
             if (refreshTabsMask and TAB_FAVORITES != 0) {
                 getFavoritesFragment()?.apply {
                     skipHashComparing = true
@@ -974,11 +899,22 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
         handleGenericContactClick(contact)
     }
 
-    private fun getAllFragments() = arrayListOf<MyViewPagerFragment<*>?>(
-        getFavoritesFragment(),
-        getContactsFragment(),
-        getGroupsFragment()
-    )
+    private fun getAllFragments(): List<MyViewPagerFragment<*>?> {
+        val fragments = mutableListOf<MyViewPagerFragment<*>?>()
+        val showTabs = config.showTabs
+        
+        if (showTabs and TAB_FAVORITES != 0) {
+            fragments.add(getFavoritesFragment())
+        }
+        if (showTabs and TAB_CONTACTS != 0) {
+            fragments.add(getContactsFragment())
+        }
+        if (showTabs and TAB_GROUPS != 0) {
+            fragments.add(getGroupsFragment())
+        }
+        
+        return fragments
+    }
     
     private fun getContactsFragment(): ContactsFragment? {
         if (cachedContactsFragment == null) {
@@ -1045,23 +981,23 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
     }
 
     private fun checkWhatsNewDialog() {
-        arrayListOf<Release>().apply {
-            add(Release(414, R.string.release_414))
-            add(Release(500, R.string.release_500))
-            add(Release(510, R.string.release_510))
-            add(Release(520, R.string.release_520))
-            add(Release(521, R.string.release_521))
-            add(Release(522, R.string.release_522))
-            add(Release(523, R.string.release_523))
-            add(Release(524, R.string.release_524))
-            add(Release(610, R.string.release_610))
-            add(Release(611, R.string.release_611))
-            add(Release(612, R.string.release_612))
-            add(Release(620, R.string.release_620))
-            add(Release(621, R.string.release_621))
-            add(Release(700, R.string.release_700))
-            add(Release(701, R.string.release_701))
-            checkWhatsNew(this, BuildConfig.VERSION_CODE)
-        }
+        val releases = listOf(
+            Release(414, R.string.release_414),
+            Release(500, R.string.release_500),
+            Release(510, R.string.release_510),
+            Release(520, R.string.release_520),
+            Release(521, R.string.release_521),
+            Release(522, R.string.release_522),
+            Release(523, R.string.release_523),
+            Release(524, R.string.release_524),
+            Release(610, R.string.release_610),
+            Release(611, R.string.release_611),
+            Release(612, R.string.release_612),
+            Release(620, R.string.release_620),
+            Release(621, R.string.release_621),
+            Release(700, R.string.release_700),
+            Release(701, R.string.release_701)
+        )
+        checkWhatsNew(releases, BuildConfig.VERSION_CODE)
     }
 }

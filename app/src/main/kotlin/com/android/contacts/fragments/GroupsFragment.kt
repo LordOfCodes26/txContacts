@@ -29,7 +29,9 @@ class GroupsFragment(context: Context, attributeSet: AttributeSet) : MyViewPager
     }
 
     private fun showNewGroupsDialog() {
-        CreateNewGroupDialog(activity as SimpleActivity) {
+        val blurTarget = (activity as SimpleActivity).findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+            ?: throw IllegalStateException("mainBlurTarget not found")
+        CreateNewGroupDialog(activity as SimpleActivity, blurTarget) {
             (activity as? MainActivity)?.refreshContacts(TAB_GROUPS)
         }
     }

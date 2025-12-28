@@ -224,7 +224,9 @@ class ViewContactActivity : ContactActivity() {
             }
 
             findItem(R.id.manage_visible_fields).setOnMenuItemClickListener {
-                ManageVisibleFieldsDialog(this@ViewContactActivity) {
+                val blurTarget = findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+                    ?: throw IllegalStateException("mainBlurTarget not found")
+                ManageVisibleFieldsDialog(this@ViewContactActivity, blurTarget) {
                     showFields = config.showContactFields
                     ensureBackgroundThread {
                         initContact()
@@ -1349,7 +1351,9 @@ class ViewContactActivity : ContactActivity() {
             val actions = getSocialActions(contactId)
             runOnUiThread {
                 if (!isDestroyed && !isFinishing) {
-                    ChooseSocialDialog(this@ViewContactActivity, actions) { action ->
+                    val blurTarget = findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+                        ?: throw IllegalStateException("mainBlurTarget not found")
+                    ChooseSocialDialog(this@ViewContactActivity, actions, blurTarget) { action ->
                         Intent(Intent.ACTION_VIEW).apply {
                             val uri = ContentUris.withAppendedId(ContactsContract.Data.CONTENT_URI, action.dataId)
                             setDataAndType(uri, action.mimetype)
@@ -1381,7 +1385,9 @@ class ViewContactActivity : ContactActivity() {
             runOnUiThread {
                 if (!isDestroyed && !isFinishing) {
                     if (actions.size > 1) {
-                        ChooseSocialDialog(this@ViewContactActivity, actions) { action ->
+                        val blurTarget = findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+                            ?: throw IllegalStateException("mainBlurTarget not found")
+                        ChooseSocialDialog(this@ViewContactActivity, actions, blurTarget) { action ->
                             Intent(Intent.ACTION_VIEW).apply {
                                 val uri = ContentUris.withAppendedId(ContactsContract.Data.CONTENT_URI, action.dataId)
                                 setDataAndType(uri, action.mimetype)
@@ -1435,7 +1441,9 @@ class ViewContactActivity : ContactActivity() {
         ensureBackgroundThread {
             runOnUiThread {
                 if (!isDestroyed && !isFinishing) {
-                    ChooseSocialDialog(this@ViewContactActivity, actions) { action ->
+                    val blurTarget = findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+                        ?: throw IllegalStateException("mainBlurTarget not found")
+                    ChooseSocialDialog(this@ViewContactActivity, actions, blurTarget) { action ->
                         Intent(Intent.ACTION_VIEW).apply {
                             val uri = ContentUris.withAppendedId(ContactsContract.Data.CONTENT_URI, action.dataId)
                             setDataAndType(uri, action.mimetype)

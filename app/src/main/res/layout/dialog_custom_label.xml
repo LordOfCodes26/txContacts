@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/dialog_holder"
+<eightbitlab.com.blurview.BlurView
+    android:id="@+id/blurView"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingStart="@dimen/activity_margin"
-    android:paddingTop="@dimen/activity_margin"
-    android:paddingEnd="@dimen/activity_margin">
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <RelativeLayout
+        android:id="@+id/dialog_holder"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingStart="@dimen/activity_margin"
+        android:paddingTop="@dimen/activity_margin"
+        android:paddingEnd="@dimen/activity_margin">
 
-    <com.goodwy.commons.views.MyTextInputLayout
+        <com.goodwy.commons.views.MyTextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="@string/title">
@@ -21,5 +26,6 @@
             android:textCursorDrawable="@null"
             android:textSize="@dimen/bigger_text_size" />
 
-    </com.goodwy.commons.views.MyTextInputLayout>
-</RelativeLayout>
+        </com.goodwy.commons.views.MyTextInputLayout>
+    </RelativeLayout>
+</eightbitlab.com.blurview.BlurView>

@@ -414,7 +414,9 @@ class EditContactActivity : ContactActivity() {
             }
 
             findItem(R.id.manage_visible_fields).setOnMenuItemClickListener {
-                ManageVisibleFieldsDialog(this@EditContactActivity) {
+                val blurTarget = findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+                    ?: throw IllegalStateException("mainBlurTarget not found")
+                ManageVisibleFieldsDialog(this@EditContactActivity, blurTarget) {
                     initContact()
                 }
                 true
@@ -944,11 +946,15 @@ class EditContactActivity : ContactActivity() {
                 contactRelationSelectContact.apply {
                     applyColorFilter(getProperTextColor)
                     setOnClickListener {
+                        val blurTarget = findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+                            ?: throw IllegalStateException("mainBlurTarget not found")
                         SelectContactsDialog(
                             this@EditContactActivity,
                             initialContacts = allContacts,
                             allowSelectMultiple = false,
-                            showOnlyContactsWithNumber = false
+                            showOnlyContactsWithNumber = false,
+                            selectContacts = null,
+                            blurTarget = blurTarget
                         ) { addedContacts, _ ->
                             val name = addedContacts.firstOrNull()?.getNameToDisplay()
                             if (name != null) contactRelation.setText(name)
@@ -1123,7 +1129,9 @@ class EditContactActivity : ContactActivity() {
         binding.contactAddFields.setTextColor(getProperPrimaryColor)
 
         binding.contactAddFieldsHolder.setOnClickListener {
-            ManageVisibleFieldsDialog(this@EditContactActivity) {
+            val blurTarget = findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+                ?: throw IllegalStateException("mainBlurTarget not found")
+            ManageVisibleFieldsDialog(this@EditContactActivity, blurTarget) {
                 initContact()
             }
         }
@@ -1308,7 +1316,9 @@ class EditContactActivity : ContactActivity() {
 
         val eventField = eventHolder.contactEvent
         eventField.setOnClickListener {
-            MyDatePickerDialog(this, eventField.tag?.toString() ?: "") { dateTag ->
+            val blurTarget = findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+                ?: throw IllegalStateException("mainBlurTarget not found")
+            MyDatePickerDialog(this, eventField.tag?.toString() ?: "", blurTarget) { dateTag ->
                 eventField.apply {
                     dateTag.getDateTimeFromDateString(true, this)
                     tag = dateTag
@@ -1399,7 +1409,7 @@ class EditContactActivity : ContactActivity() {
             ?: throw IllegalStateException("mainBlurTarget not found")
         RadioGroupDialog(this, items, currentRelationTypeId, showOKButton = true, blurTarget = blurTarget) {
             if (it as Int == CommonDataKinds.Relation.TYPE_CUSTOM) {
-                CustomLabelDialog(this) {
+                CustomLabelDialog(this, blurTarget) {
                     relationTypeField.text = it
                 }
             } else {
@@ -1451,7 +1461,7 @@ class EditContactActivity : ContactActivity() {
             ?: throw IllegalStateException("mainBlurTarget not found")
         RadioGroupDialog(this, items, currentNumberTypeId, showOKButton = true, blurTarget = blurTarget) {
             if (it as Int == Phone.TYPE_CUSTOM) {
-                CustomLabelDialog(this) {
+                CustomLabelDialog(this, blurTarget) {
                     numberTypeField.text = it
                 }
             } else {
@@ -1477,7 +1487,7 @@ class EditContactActivity : ContactActivity() {
             ?: throw IllegalStateException("mainBlurTarget not found")
         RadioGroupDialog(this, items, currentEmailTypeId, showOKButton = true, blurTarget = blurTarget) {
             if (it as Int == CommonDataKinds.Email.TYPE_CUSTOM) {
-                CustomLabelDialog(this) {
+                CustomLabelDialog(this, blurTarget) {
                     emailTypeField.text = it
                 }
             } else {
@@ -1499,7 +1509,7 @@ class EditContactActivity : ContactActivity() {
             ?: throw IllegalStateException("mainBlurTarget not found")
         RadioGroupDialog(this, items, currentAddressTypeId, showOKButton = true, blurTarget = blurTarget) {
             if (it as Int == StructuredPostal.TYPE_CUSTOM) {
-                CustomLabelDialog(this) {
+                CustomLabelDialog(this, blurTarget) {
                     addressTypeField.text = it
                 }
             } else {
@@ -1543,7 +1553,7 @@ class EditContactActivity : ContactActivity() {
             ?: throw IllegalStateException("mainBlurTarget not found")
         RadioGroupDialog(this, items, currentIMTypeId, showOKButton = true, blurTarget = blurTarget) {
             if (it as Int == Im.PROTOCOL_CUSTOM) {
-                CustomLabelDialog(this) {
+                CustomLabelDialog(this, blurTarget) {
                     imTypeField.text = it
                 }
             } else {
@@ -1570,7 +1580,7 @@ class EditContactActivity : ContactActivity() {
             ?: throw IllegalStateException("mainBlurTarget not found")
         RadioGroupDialog(this, items, currentEventTypeId, showOKButton = true, blurTarget = blurTarget) {
             if (it as Int == CommonDataKinds.Event.TYPE_CUSTOM) {
-                CustomLabelDialog(this) {
+                CustomLabelDialog(this, blurTarget) {
                     eventTypeField.text = it
                 }
             } else if (it == CUSTOM_EVENT_TYPE_DEATH) {
@@ -1582,7 +1592,9 @@ class EditContactActivity : ContactActivity() {
     }
 
     private fun showSelectGroupsDialog() {
-        SelectGroupsDialog(this@EditContactActivity, contact!!.groups) {
+        val blurTarget = findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+            ?: throw IllegalStateException("mainBlurTarget not found")
+        SelectGroupsDialog(this@EditContactActivity, contact!!.groups, blurTarget) {
             contact!!.groups = it
             setupGroups()
         }
@@ -2067,11 +2079,15 @@ class EditContactActivity : ContactActivity() {
             contactRelationSelectContact.apply {
                 applyColorFilter(getProperTextColor)
                 setOnClickListener {
+                    val blurTarget = findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+                        ?: throw IllegalStateException("mainBlurTarget not found")
                     SelectContactsDialog(
                         this@EditContactActivity,
                         initialContacts = allContacts,
                         allowSelectMultiple = false,
-                        showOnlyContactsWithNumber = false
+                        showOnlyContactsWithNumber = false,
+                        selectContacts = null,
+                        blurTarget = blurTarget
                     ) { addedContacts, _ ->
                         val name = addedContacts.firstOrNull()?.getNameToDisplay()
                         if (name != null) contactRelation.setText(name)

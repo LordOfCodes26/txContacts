@@ -185,13 +185,17 @@ class SettingsActivity : SimpleActivity() {
 
     private fun setupManageShownContactFields() {
         binding.settingsManageContactFieldsHolder.setOnClickListener {
-            ManageVisibleFieldsDialog(this) {}
+            val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+                ?: throw IllegalStateException("mainBlurTarget not found")
+            ManageVisibleFieldsDialog(this, blurTarget) {}
         }
     }
 
     private fun setupManageShownTabs() {
         binding.settingsManageShownTabsHolder.setOnClickListener {
-            ManageVisibleTabsDialog(this)
+            val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+                ?: throw IllegalStateException("mainBlurTarget not found")
+            ManageVisibleTabsDialog(this, blurTarget)
         }
     }
 
@@ -444,8 +448,8 @@ class SettingsActivity : SimpleActivity() {
 
     private fun setupShowPrivateContacts() {
         binding.apply {
-            //val simpleDialer = "com.goodwy.dialer"
-            //val simpleDialerDebug = "com.goodwy.dialer.debug"
+            //val simpleDialer = "com.android.dialer"
+            //val simpleDialerDebug = "com.android.dialer.debug"
             //settings_show_private_contacts_holder.beVisibleIf(isPackageInstalled(simpleDialer) && isPackageInstalled(simpleDialerDebug))
             settingsShowPrivateContacts.isChecked = config.showPrivateContacts
             settingsShowPrivateContactsHolder.setOnClickListener {
@@ -518,8 +522,11 @@ class SettingsActivity : SimpleActivity() {
         binding.settingsEnableAutomaticBackupsHolder.setOnClickListener {
             val wasBackupDisabled = !config.autoBackup
             if (wasBackupDisabled) {
+                val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+                    ?: throw IllegalStateException("mainBlurTarget not found")
                 ManageAutoBackupsDialog(
                     activity = this,
+                    blurTarget = blurTarget,
                     onSuccess = {
                         enableOrDisableAutomaticBackups(true)
                         scheduleNextAutomaticBackup()
@@ -550,8 +557,11 @@ class SettingsActivity : SimpleActivity() {
     private fun setupManageAutomaticBackups() {
         binding.settingsManageAutomaticBackupsHolder.beVisibleIf(isRPlus() && config.autoBackup)
         binding.settingsManageAutomaticBackupsHolder.setOnClickListener {
+            val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+                ?: throw IllegalStateException("mainBlurTarget not found")
             ManageAutoBackupsDialog(
                 activity = this,
+                blurTarget = blurTarget,
                 onSuccess = {
                     scheduleNextAutomaticBackup()
                     updateAutomaticBackupsLastAndNext()
@@ -625,8 +635,10 @@ class SettingsActivity : SimpleActivity() {
     }
 
     private fun tryExportContacts() {
+        val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+            ?: throw IllegalStateException("mainBlurTarget not found")
         if (isQPlus()) {
-            ExportContactsDialog(this, config.lastExportPath, true) { file, ignoredContactSources ->
+            ExportContactsDialog(this, config.lastExportPath, true, blurTarget) { file, ignoredContactSources ->
                 ignoredExportContactSources = ignoredContactSources
 
                 Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
@@ -646,7 +658,7 @@ class SettingsActivity : SimpleActivity() {
         } else {
             handlePermission(PERMISSION_WRITE_STORAGE) {
                 if (it) {
-                    ExportContactsDialog(this, config.lastExportPath, false) { file, ignoredContactSources ->
+                    ExportContactsDialog(this, config.lastExportPath, false, blurTarget) { file, ignoredContactSources ->
                         getFileOutputStream(file.toFileDirItem(this), true) {
                             exportContactsTo(ignoredContactSources, it)
                         }

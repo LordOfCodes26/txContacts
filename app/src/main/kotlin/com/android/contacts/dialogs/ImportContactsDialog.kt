@@ -15,8 +15,11 @@ import com.android.contacts.extensions.config
 import com.android.contacts.extensions.showContactSourcePicker
 import com.android.contacts.helpers.VcfImporter
 import com.android.contacts.helpers.VcfImporter.ImportResult.IMPORT_FAIL
+import com.goodwy.commons.extensions.getProperBlurOverlayColor
+import eightbitlab.com.blurview.BlurTarget
+import eightbitlab.com.blurview.BlurView
 
-class ImportContactsDialog(val activity: SimpleActivity, val path: String, private val callback: (refreshView: Boolean) -> Unit) {
+class ImportContactsDialog(val activity: SimpleActivity, val path: String, blurTarget: BlurTarget, private val callback: (refreshView: Boolean) -> Unit) {
     private var targetContactSource = ""
     private var ignoreClicks = false
 
@@ -48,6 +51,17 @@ class ImportContactsDialog(val activity: SimpleActivity, val path: String, priva
                 }
             }
         }
+
+        // Setup BlurView with the provided BlurTarget
+        val blurView = binding.blurView
+        val decorView = activity.window.decorView
+        val windowBackground = decorView.background
+        
+        blurView.setOverlayColor(activity.getProperBlurOverlayColor())
+        blurView.setupWith(blurTarget)
+            .setFrameClearDrawable(windowBackground)
+            .setBlurRadius(8f)
+            .setBlurAutoUpdate(true)
 
         activity.getAlertDialogBuilder()
             .setPositiveButton(com.goodwy.commons.R.string.ok, null)

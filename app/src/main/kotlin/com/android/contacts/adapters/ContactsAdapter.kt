@@ -309,7 +309,7 @@ class ContactsAdapter(
             ?: throw IllegalStateException("mainBlurTarget not found")
         RadioGroupDialog(activity, radioItems, 0, blurTarget = blurTarget) {
             if (it as Int == NEW_GROUP_ID) {
-                CreateNewGroupDialog(activity) {
+                CreateNewGroupDialog(activity, blurTarget) {
                     ensureBackgroundThread {
                         activity.addContactsToGroup(selectedContacts, it.id!!.toLong())
                         refreshListener?.refreshContacts(TAB_GROUPS)

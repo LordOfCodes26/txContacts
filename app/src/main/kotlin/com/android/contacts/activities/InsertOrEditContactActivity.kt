@@ -15,6 +15,7 @@ import com.goodwy.commons.extensions.*
 import com.goodwy.commons.views.MyLiquidNavigationView
 import com.goodwy.commons.helpers.*
 import com.goodwy.commons.models.contacts.Contact
+import eightbitlab.com.blurview.BlurTarget
 import com.android.contacts.R
 import com.android.contacts.adapters.ViewPagerAdapter
 import com.android.contacts.databinding.ActivityInsertEditContactBinding
@@ -396,13 +397,17 @@ class InsertOrEditContactActivity : SimpleActivity(), RefreshContactsListener {
     }
 
     private fun showSortingDialog() {
-        ChangeSortingDialog(this) {
+        val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+            ?: throw IllegalStateException("mainBlurTarget not found")
+        ChangeSortingDialog(this, blurTarget = blurTarget) {
             refreshContacts(getTabsMask())
         }
     }
 
     fun showFilterDialog() {
-        FilterContactSourcesDialog(this) {
+        val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+            ?: throw IllegalStateException("mainBlurTarget not found")
+        FilterContactSourcesDialog(this, blurTarget) {
             findViewById<MyViewPagerFragment<*>>(R.id.contacts_fragment)?.forceListRedraw = true
             refreshContacts(getTabsMask())
         }

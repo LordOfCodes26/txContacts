@@ -8,12 +8,25 @@ import com.goodwy.commons.helpers.ensureBackgroundThread
 import com.goodwy.commons.models.contacts.Group
 import com.android.contacts.R
 import com.android.contacts.databinding.DialogRenameGroupBinding
+import eightbitlab.com.blurview.BlurTarget
+import eightbitlab.com.blurview.BlurView
 
-class RenameGroupDialog(val activity: BaseSimpleActivity, val group: Group, val callback: () -> Unit) {
+class RenameGroupDialog(val activity: BaseSimpleActivity, val group: Group, blurTarget: BlurTarget, val callback: () -> Unit) {
     init {
         val binding = DialogRenameGroupBinding.inflate(activity.layoutInflater).apply {
             renameGroupTitle.setText(group.title)
         }
+
+        // Setup BlurView with the provided BlurTarget
+        val blurView = binding.blurView
+        val decorView = activity.window.decorView
+        val windowBackground = decorView.background
+        
+        blurView.setOverlayColor(activity.getProperBlurOverlayColor())
+        blurView.setupWith(blurTarget)
+            .setFrameClearDrawable(windowBackground)
+            .setBlurRadius(8f)
+            .setBlurAutoUpdate(true)
 
         activity.getAlertDialogBuilder()
             .setPositiveButton(com.goodwy.commons.R.string.ok, null)

@@ -5,13 +5,26 @@ import com.goodwy.commons.activities.BaseSimpleActivity
 import com.goodwy.commons.extensions.*
 import com.goodwy.commons.helpers.isSPlus
 import com.android.contacts.databinding.DialogDatePickerBinding
+import eightbitlab.com.blurview.BlurTarget
+import eightbitlab.com.blurview.BlurView
 import org.joda.time.DateTime
 import java.util.Calendar
 
-class MyDatePickerDialog(val activity: BaseSimpleActivity, val defaultDate: String, val callback: (dateTag: String) -> Unit) {
+class MyDatePickerDialog(val activity: BaseSimpleActivity, val defaultDate: String, blurTarget: BlurTarget, val callback: (dateTag: String) -> Unit) {
     private val binding = DialogDatePickerBinding.inflate(activity.layoutInflater)
 
     init {
+        // Setup BlurView with the provided BlurTarget
+        val blurView = binding.blurView
+        val decorView = activity.window.decorView
+        val windowBackground = decorView.background
+        
+        blurView.setOverlayColor(activity.getProperBlurOverlayColor())
+        blurView.setupWith(blurTarget)
+            .setFrameClearDrawable(windowBackground)
+            .setBlurRadius(8f)
+            .setBlurAutoUpdate(true)
+
 //        activity.getAlertDialogBuilder()
         AlertDialog.Builder(activity, activity.getDatePickerDialogTheme())
             .setPositiveButton(com.goodwy.commons.R.string.ok) { dialog, which -> dialogConfirmed() }

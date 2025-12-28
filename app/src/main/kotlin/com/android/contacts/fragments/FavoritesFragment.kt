@@ -47,7 +47,9 @@ class FavoritesFragment(context: Context, attributeSet: AttributeSet) : MyViewPa
     private fun getRecyclerAdapter() = innerBinding.fragmentList.adapter as? ContactsAdapter
 
     private fun showAddFavoritesDialog() {
-        SelectContactsDialog(activity!!, allContacts, true, false) { addedContacts, removedContacts ->
+        val blurTarget = activity!!.findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+            ?: throw IllegalStateException("mainBlurTarget not found")
+        SelectContactsDialog(activity!!, allContacts, true, false, null, blurTarget) { addedContacts, removedContacts ->
             ContactsHelper(activity as SimpleActivity).apply {
                 addFavorites(addedContacts)
                 removeFavorites(removedContacts)

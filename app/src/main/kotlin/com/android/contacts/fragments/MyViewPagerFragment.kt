@@ -69,10 +69,9 @@ abstract class MyViewPagerFragment<Binding : MyViewPagerFragment.InnerBinding>(c
 
             innerBinding.fragmentPlaceholder2.underlineText()
 
-            val getProperBackgroundColor = context.getProperBackgroundColor()
             when (this) {
                 is FavoritesFragment -> {
-                    innerBinding.binding.root.setBackgroundColor(getProperBackgroundColor)
+                    innerBinding.binding.root.setBackgroundColor(backgroundColor)
                     innerBinding.fragmentPlaceholder.text = activity.getString(R.string.no_favorites)
                     innerBinding.fragmentPlaceholder2.text = activity.getString(com.goodwy.commons.R.string.add_favorites)
                     innerBinding.fragmentFab.contentDescription = activity.getString(com.goodwy.commons.R.string.add_favorites)
@@ -80,11 +79,11 @@ abstract class MyViewPagerFragment<Binding : MyViewPagerFragment.InnerBinding>(c
                     innerBinding.letterFastscroller?.beGone()
                 }
                 is ContactsFragment -> {
-                    innerBinding.binding.root.setBackgroundColor(getProperBackgroundColor)
+                    innerBinding.binding.root.setBackgroundColor(backgroundColor)
                     innerBinding.fragmentFab.contentDescription = activity.getString(com.goodwy.commons.R.string.create_new_contact)
                 }
                 is GroupsFragment -> {
-                    innerBinding.binding.root.setBackgroundColor(getProperBackgroundColor)
+                    innerBinding.binding.root.setBackgroundColor(backgroundColor)
                     innerBinding.fragmentPlaceholder.text = activity.getString(R.string.no_group_created)
                     innerBinding.fragmentPlaceholder2.text = activity.getString(R.string.create_group)
                     innerBinding.fragmentFab.contentDescription = activity.getString(R.string.create_group)
