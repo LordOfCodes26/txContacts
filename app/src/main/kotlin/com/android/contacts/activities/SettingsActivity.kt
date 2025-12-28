@@ -66,80 +66,16 @@ class SettingsActivity : SimpleActivity() {
         isMaterialActivity = true
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
-
-        updateMaterialActivityViews(binding.settingsCoordinator, binding.settingsHolder, useTransparentNavigation = true, useTopSearchMenu = false)
-        // setupMaterialScrollListener expects MyAppBarLayout, but we have MaterialToolbar - commented out
-        // setupMaterialScrollListener(binding.settingsNestedScrollview, binding.settingsToolbar)
-
-        // if (isPlayStoreInstalled()) {
-        //     //PlayStore
-        //     purchaseHelper.initBillingClient()
-        //     val iapList: ArrayList<String> = arrayListOf(productIdX1, productIdX2, productIdX3)
-        //     val subList: ArrayList<String> = arrayListOf(subscriptionIdX1, subscriptionIdX2, subscriptionIdX3, subscriptionYearIdX1, subscriptionYearIdX2, subscriptionYearIdX3)
-        //     purchaseHelper.retrieveDonation(iapList, subList)
-        //
-        //     purchaseHelper.isIapPurchased.observe(this) {
-        //         when (it) {
-        //             is Tipping.Succeeded -> {
-        //                 config.isPro = true
-        //                 updatePro()
-        //             }
-        //             is Tipping.NoTips -> {
-        //                 config.isPro = false
-        //                 updatePro()
-        //             }
-        //             is Tipping.FailedToLoad -> {
-        //             }
-        //         }
-        //     }
-        //
-        //     purchaseHelper.isSupPurchased.observe(this) {
-        //         when (it) {
-        //             is Tipping.Succeeded -> {
-        //                 config.isProSubs = true
-        //                 updatePro()
-        //             }
-        //             is Tipping.NoTips -> {
-        //                 config.isProSubs = false
-        //                 updatePro()
-        //             }
-        //             is Tipping.FailedToLoad -> {
-        //             }
-        //         }
-        //     }
-        // }
-        // if (isRuStoreInstalled()) {
-        //     //RuStore
-        //     ruStoreHelper = RuStoreHelper()
-        //     ruStoreHelper!!.checkPurchasesAvailability(this@SettingsActivity)
-        //
-        //     lifecycleScope.launch {
-        //         ruStoreHelper!!.eventStart
-        //             .flowWithLifecycle(lifecycle)
-        //             .collect { event ->
-        //                 handleEventStart(event)
-        //             }
-        //     }
-        //
-        //     lifecycleScope.launch {
-        //         ruStoreHelper!!.statePurchased
-        //             .flowWithLifecycle(lifecycle)
-        //             .collect { state ->
-        //                 //update of purchased
-        //                 if (!state.isLoading && ruStoreIsConnected) {
-        //                     baseConfig.isProRuStore = state.purchases.firstOrNull() != null
-        //                     updatePro()
-        //                 }
-        //             }
-        //     }
-        // }
+        binding.apply {
+//            setupEdgeToEdge(padBottomSystem = listOf(settingsNestedScrollview))
+//            setupMaterialScrollListener(binding.settingsNestedScrollview, binding.settingsAppbar)
+        }
     }
 
     override fun onResume() {
         super.onResume()
-        setupToolbar(binding.settingsToolbar, NavigationIcon.Arrow)
-
-        setupPurchaseThankYou()
+        val properBackgroundColor = if (isDynamicTheme() && !isSystemInDarkMode()) getSurfaceColor() else getProperBackgroundColor()
+        setupTopAppBar(binding.settingsAppbar, NavigationIcon.Arrow, topBarColor = properBackgroundColor)
 
         setupCustomizeColors()
         setupShowDialpadButton()
@@ -231,10 +167,6 @@ class SettingsActivity : SimpleActivity() {
         }
     }
 
-    private fun setupPurchaseThankYou() = binding.apply {
-        settingsPurchaseThankYouHolder.beGoneIf(isPro())
-        settingsPurchaseThankYouHolder.onClick = { launchPurchase() }
-    }
 
     private fun setupCustomizeColors() = binding.apply {
         settingsCustomizeColorsHolder.setOnClickListener {
@@ -1060,13 +992,6 @@ class SettingsActivity : SimpleActivity() {
         }
     }
 
-    private fun updatePro(isPro: Boolean = isPro()) {
-        binding.apply {
-            settingsSwipeLeftActionHolder.alpha = if (isPro) 1f else 0.4f
-            settingsPurchaseThankYouHolder.beGoneIf(isPro)
-            settingsTipJarHolder.beVisibleIf(isPro)
-        }
-    }
 
     // private fun updateProducts() {
     //     val productList: ArrayList<String> = arrayListOf(productIdX1, productIdX2, productIdX3, subscriptionIdX1, subscriptionIdX2, subscriptionIdX3, subscriptionYearIdX1, subscriptionYearIdX2, subscriptionYearIdX3)

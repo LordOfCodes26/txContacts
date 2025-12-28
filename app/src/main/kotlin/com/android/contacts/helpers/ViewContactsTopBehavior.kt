@@ -9,6 +9,7 @@ import com.android.contacts.R
 import com.android.contacts.databinding.ActivityViewContactBinding
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.appbar.CollapsingToolbarLayout
+import eightbitlab.com.blurview.BlurTarget
 
 
 class ViewContactsTopBehavior(
@@ -22,9 +23,18 @@ class ViewContactsTopBehavior(
     }
 
     override fun View.provideAppbar(): AppBarLayout {
-        // Find the root view (BlurTarget) and bind from there
-        // The binding will find contact_wrapper inside the root
-        val rootView = this.rootView
+        // Find the BlurTarget by traversing up the view hierarchy
+        // The binding expects the BlurTarget as the root, not the DecorView
+        var parent: View? = this.parent as? View
+        var blurTarget: BlurTarget? = null
+        while (parent != null) {
+            if (parent is BlurTarget) {
+                blurTarget = parent
+                break
+            }
+            parent = parent.parent as? View
+        }
+        val rootView = blurTarget ?: throw IllegalStateException("BlurTarget not found in view hierarchy")
         binding = ActivityViewContactBinding.bind(rootView)
         return  binding.contactAppbar
     }
