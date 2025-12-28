@@ -11,8 +11,8 @@ import android.provider.ContactsContract.CommonDataKinds.Email
 import android.provider.ContactsContract.CommonDataKinds.Phone
 import android.speech.RecognizerIntent
 import androidx.viewpager.widget.ViewPager
-import com.goodwy.commons.databinding.BottomTablayoutItemBinding
 import com.goodwy.commons.extensions.*
+import com.goodwy.commons.views.MyLiquidNavigationView
 import com.goodwy.commons.helpers.*
 import com.goodwy.commons.models.contacts.Contact
 import com.android.contacts.R
@@ -25,6 +25,8 @@ import com.android.contacts.fragments.MyViewPagerFragment
 import com.android.contacts.helpers.ADD_NEW_CONTACT_NUMBER
 import com.android.contacts.helpers.KEY_EMAIL
 import com.android.contacts.helpers.KEY_NAME
+import com.android.contacts.helpers.LOCATION_CONTACTS_TAB
+import com.android.contacts.helpers.LOCATION_FAVORITES_TAB
 import com.android.contacts.interfaces.RefreshContactsListener
 import androidx.core.graphics.drawable.toDrawable
 import java.util.Objects
@@ -50,7 +52,7 @@ class InsertOrEditContactActivity : SimpleActivity(), RefreshContactsListener {
         setContentView(binding.root)
         setupOptionsMenu()
         isSelectContactIntent = intent.action == Intent.ACTION_PICK
-        updateMaterialActivityViews(binding.insertEditCoordinator, binding.insertEditContactHolder, useTransparentNavigation = false, useTopSearchMenu = true)
+        setupEdgeToEdge(padBottomImeAndSystem = listOf(binding.insertEditContactHolder))
 
         if (isSelectContactIntent) {
             specialMimeType = when (intent.data) {
@@ -89,7 +91,7 @@ class InsertOrEditContactActivity : SimpleActivity(), RefreshContactsListener {
     override fun onResume() {
         super.onResume()
         updateMenuColors()
-        setupTabColors()
+//        setupTabColors()
     }
 
     private fun setupOptionsMenu() {
@@ -199,27 +201,20 @@ class InsertOrEditContactActivity : SimpleActivity(), RefreshContactsListener {
         binding.insertEditTabsHolder.removeAllTabs()
         contactsFavoritesList.forEachIndexed { index, value ->
             if (config.showTabs and value != 0) {
-                binding.insertEditTabsHolder.newTab().setCustomView(com.goodwy.commons.R.layout.bottom_tablayout_item).apply tab@{
-                    customView?.let {
-                        BottomTablayoutItemBinding.bind(it)
-                    }?.apply {
-                        tabItemIcon.setImageDrawable(getTabIcon(index))
-                        tabItemLabel.text = getTabLabel(index)
-                        tabItemLabel.beGoneIf(config.useIconTabs)
-                        binding.insertEditTabsHolder.addTab(this@tab)
-                    }
-                }
+                val tab = binding.insertEditTabsHolder.newTab()
+                tab.setIcon(getTabIconResId(index))
+                tab.setText(getTabLabel(index))
+                binding.insertEditTabsHolder.addTab(tab)
             }
         }
 
         binding.insertEditTabsHolder.onTabSelectionChanged(
             tabUnselectedAction = {
-                updateBottomTabItemColors(it.customView, false, getDeselectedTabDrawableIds()[it.position])
+                // MyLiquidNavigationView handles colors internally
             },
             tabSelectedAction = {
                 binding.insertEditMenu.closeSearch()
                 binding.viewPager.currentItem = it.position
-                updateBottomTabItemColors(it.customView, true, getSelectedTabDrawableIds()[it.position])
             }
         )
 
@@ -242,14 +237,9 @@ class InsertOrEditContactActivity : SimpleActivity(), RefreshContactsListener {
     }
 
     private fun setupTabColors() {
-        val activeView = binding.insertEditTabsHolder.getTabAt(binding.viewPager.currentItem)?.customView
-        updateBottomTabItemColors(activeView, true, getSelectedTabDrawableIds()[binding.viewPager.currentItem])
-
-        getInactiveTabIndexes(binding.viewPager.currentItem).forEach { index ->
-            val inactiveView = binding.insertEditTabsHolder.getTabAt(index)?.customView
-            updateBottomTabItemColors(inactiveView, false, getDeselectedTabDrawableIds()[index])
-        }
-
+        // MyLiquidNavigationView handles colors internally through Compose
+        // No need to manually update tab item colors
+        
         val bottomBarColor =
             if (isDynamicTheme() && !isSystemInDarkMode()) getColoredMaterialStatusBarColor()
             else getSurfaceColor()
@@ -275,6 +265,14 @@ class InsertOrEditContactActivity : SimpleActivity(), RefreshContactsListener {
         com.goodwy.commons.R.drawable.ic_star_vector,
         com.goodwy.commons.R.drawable.ic_person_rounded
     )
+
+    private fun getTabIconResId(position: Int): Int {
+        return when (position) {
+            LOCATION_FAVORITES_TAB -> com.goodwy.commons.R.drawable.ic_star_vector
+            LOCATION_CONTACTS_TAB -> com.goodwy.commons.R.drawable.ic_person_rounded
+            else -> com.goodwy.commons.R.drawable.ic_person_rounded
+        }
+    }
 
     override fun refreshContacts(refreshTabsMask: Int) {
         if (isDestroyed || isFinishing) {

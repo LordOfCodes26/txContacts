@@ -76,11 +76,11 @@
         </RelativeLayout>
 
         <com.goodwy.commons.views.MyViewPager
-            android:id="@+id/view_pager"
+            android:id="@+id/viewPager"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            app:layout_constraintBottom_toTopOf="@+id/main_tabs_holder"
-            app:layout_constraintTop_toBottomOf="@+id/main_top_tabs_container" />
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <com.goodwy.commons.views.MyFloatingActionButton
             android:id="@+id/main_dialpad_button"
@@ -116,14 +116,12 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:rippleColor="@color/pressed_item_foreground" />
 
-        <com.google.android.material.tabs.TabLayout
+        <com.goodwy.commons.views.MyLiquidNavigationView
             android:id="@+id/main_tabs_holder"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:tabIndicator="@null"
-            app:tabMinWidth="150dp"
-            app:tabRippleColor="@null" />
+            android:layout_marginHorizontal="40dp"
+            app:layout_constraintBottom_toBottomOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

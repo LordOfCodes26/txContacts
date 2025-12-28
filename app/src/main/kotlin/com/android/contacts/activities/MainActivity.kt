@@ -12,6 +12,7 @@ import android.graphics.drawable.Icon
 import android.graphics.drawable.LayerDrawable
 import android.os.Bundle
 import android.os.Handler
+import android.os.Looper
 import android.speech.RecognizerIntent
 import android.view.Menu
 import android.view.MenuItem
@@ -28,7 +29,6 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager.widget.ViewPager
 import com.behaviorule.arturdumchev.library.pixels
 import com.goodwy.commons.databases.ContactsDatabase
-import com.goodwy.commons.databinding.BottomTablayoutItemBinding
 import com.goodwy.commons.dialogs.NewAppDialog
 import com.goodwy.commons.dialogs.RadioGroupDialog
 import com.goodwy.commons.extensions.*
@@ -37,6 +37,7 @@ import com.goodwy.commons.helpers.*
 import com.goodwy.commons.models.RadioItem
 import com.goodwy.commons.models.Release
 import com.goodwy.commons.models.contacts.Contact
+import com.goodwy.commons.views.MyLiquidNavigationView
 import com.goodwy.commons.views.MySearchMenu
 import com.android.contacts.BuildConfig
 import com.android.contacts.R
@@ -53,13 +54,21 @@ import com.android.contacts.fragments.FavoritesFragment
 import com.android.contacts.fragments.GroupsFragment
 import com.android.contacts.fragments.MyViewPagerFragment
 import com.android.contacts.helpers.ALL_TABS_MASK
+import com.android.contacts.helpers.LOCATION_CONTACTS_TAB
+import com.android.contacts.helpers.LOCATION_FAVORITES_TAB
 import com.android.contacts.helpers.tabsList
 import com.android.contacts.interfaces.RefreshContactsListener
+import com.goodwy.commons.extensions.onTabSelectionChanged
+import com.goodwy.commons.extensions.setBackgroundColor
+import com.goodwy.commons.extensions.setText
 import me.grantland.widget.AutofitHelper
 import java.util.*
+import kotlin.and
+import kotlin.text.toFloat
 
 
 class MainActivity : SimpleActivity(), RefreshContactsListener {
+    private lateinit var mSearchView: SearchView
     private var isSearchOpen = false
     private var mSearchMenuItem: MenuItem? = null
     private var searchQuery = ""
@@ -76,6 +85,14 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
     private var currentOldScrollY = 0
     private var isSpeechToTextAvailable = false
     private val binding by viewBinding(ActivityMainBinding::inflate)
+    
+    // Cached fragment references to avoid repeated findViewById calls
+    private var cachedContactsFragment: ContactsFragment? = null
+    private var cachedFavoritesFragment: FavoritesFragment? = null
+    private var cachedGroupsFragment: GroupsFragment? = null
+    
+    // Cached Handler to avoid creating new instances
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -83,26 +100,16 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
         appLaunched(BuildConfig.APPLICATION_ID)
         setupOptionsMenu()
         refreshMenuItems()
-        val useBottomNavigationBar = config.bottomNavigationBar
         setupEdgeToEdge(padBottomImeAndSystem = listOf(binding.mainTabsHolder))
 
         storeStateVariables()
         checkContactPermissions()
         setupTabs()
         checkWhatsNewDialog()
-
-        // TODO TRANSPARENT Navigation Bar
-        if (!useBottomNavigationBar) {
-            setWindowTransparency(true) { _, bottomNavigationBarSize, leftNavigationBarSize, rightNavigationBarSize ->
-                binding.mainCoordinator.setPadding(leftNavigationBarSize, 0, rightNavigationBarSize, 0)
-                binding.mainAddButton.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                    setMargins(0, 0, 0, bottomNavigationBarSize + pixels(com.goodwy.commons.R.dimen.activity_margin).toInt())
-                }
-            }
+        binding.mainMenu.apply {
+            updateTitle(getAppLauncherName())
+            searchBeVisibleIf(false) //hide top search bar
         }
-
-        binding.mainMenu.updateTitle(getString(R.string.app_launcher_name))
-        binding.mainMenu.searchBeVisibleIf(useBottomNavigationBar)
     }
 
     private fun checkContactPermissions() {
@@ -123,14 +130,19 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
     override fun onResume() {
         super.onResume()
         refreshMenuItems()
-
+        // Cache color calculations to avoid repeated calls
+        val properTextColor = getProperTextColor()
+        val properPrimaryColor = getProperPrimaryColor()
+        val properBackgroundColor = getProperBackgroundColor()
+        val properAccentColor = getProperAccentColor()
+        val iconTintColor = properPrimaryColor.getContrastColor()
         if (storedShowTabs != config.showTabs ||storedShowPhoneNumbers != config.showPhoneNumbers) {
             System.exit(0)
             return
         }
 
         @SuppressLint("UnsafeIntentLaunch")
-        if (config.needRestart || storedBackgroundColor != getProperBackgroundColor()) {
+        if (config.needRestart || storedBackgroundColor != properBackgroundColor) {
             config.lastUsedViewPagerPage = 0
             finish()
             startActivity(intent)
@@ -144,7 +156,6 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
             }
         }
 
-        val properPrimaryColor = getProperPrimaryColor()
         val dialpadIcon = resources.getColoredDrawableWithColor(com.goodwy.commons.R.drawable.ic_dialpad_vector, properPrimaryColor.getContrastColor())
         binding.mainDialpadButton.apply {
             setImageDrawable(dialpadIcon)
@@ -154,23 +165,36 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
         binding.mainAddButton.setImageDrawable(addIcon)
 
         updateTextColors(binding.mainCoordinator)
-        setupTabColors()
+//        setupTabColors()
         binding.mainMenu.updateColors(
             background = getStartRequiredStatusBarColor(),
             scrollOffset = scrollingView?.computeVerticalScrollOffset() ?: 0
         )
 
+        val useSurfaceColor = isDynamicTheme() && !isSystemInDarkMode()
+        val surfaceColor = if (useSurfaceColor) getSurfaceColor() else 0
+        val backgroundColor = if (useSurfaceColor) surfaceColor else properBackgroundColor
+        if (useSurfaceColor) binding.mainHolder.setBackgroundColor(surfaceColor)
+        
+        // Batch fragment color updates
+        val allFragments = getAllFragments()
+        allFragments.forEach { fragment ->
+            fragment?.setupColors(properTextColor, properPrimaryColor, properAccentColor)
+            if (storedFontSize != config.fontSize) {
+                fragment?.fontSizeChanged()
+            }
+            fragment?.setBackgroundColor(backgroundColor)
+        }
+
         val configStartNameWithSurname = config.startNameWithSurname
         if (storedStartNameWithSurname != configStartNameWithSurname) {
-            findViewById<MyViewPagerFragment<*>>(R.id.contacts_fragment)?.startNameWithSurnameChanged(configStartNameWithSurname)
-            findViewById<MyViewPagerFragment<*>>(R.id.favorites_fragment)?.startNameWithSurnameChanged(configStartNameWithSurname)
+            getContactsFragment()?.startNameWithSurnameChanged(configStartNameWithSurname)
+            getFavoritesFragment()?.startNameWithSurnameChanged(configStartNameWithSurname)
         }
 
         val configFontSize = config.fontSize
         if (storedFontSize != configFontSize) {
-            getAllFragments().forEach {
-                it?.fontSizeChanged()
-            }
+            storedFontSize = configFontSize
         }
 
         if (werePermissionsHandled && !isFirstResume) {
@@ -207,8 +231,10 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
             ContactsDatabase.destroyInstance()
         }
         config.needRestart = false
+        clearFragmentCache()
     }
 
+    @SuppressLint("GestureBackNavigation")
     override fun onBackPressed() {
         if (binding.mainMenu.isSearchOpen) {
             binding.mainMenu.closeSearch()
@@ -236,67 +262,69 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
 
     private fun refreshMenuItems() {
         val currentFragment = getCurrentFragment()
+        val groupsFragment = getGroupsFragment()
+        val favoritesFragment = getFavoritesFragment()
         binding.mainMenu.requireToolbar().menu.apply {
-            findItem(R.id.search).isVisible = !config.bottomNavigationBar
-            findItem(R.id.sort).isVisible = currentFragment != findViewById(R.id.groups_fragment)
-            findItem(R.id.filter).isVisible = currentFragment != findViewById(R.id.groups_fragment)
+            findItem(R.id.search).isVisible = /*!config.bottomNavigationBar*/ true
+            findItem(R.id.sort).isVisible = currentFragment != groupsFragment
+            findItem(R.id.filter).isVisible = currentFragment != groupsFragment
             //findItem(R.id.dialpad).isVisible = !config.showDialpadButton
-            findItem(R.id.change_view_type).isVisible = currentFragment == findViewById(R.id.favorites_fragment)
-            findItem(R.id.column_count).isVisible = currentFragment == findViewById(R.id.favorites_fragment) && config.viewType == VIEW_TYPE_GRID
+            findItem(R.id.change_view_type).isVisible = currentFragment == favoritesFragment
+            findItem(R.id.column_count).isVisible = currentFragment == favoritesFragment && config.viewType == VIEW_TYPE_GRID
         }
     }
 
     private fun setupOptionsMenu() {
-        binding.mainMenu.requireToolbar().inflateMenu(R.menu.menu)
-        binding.mainMenu.toggleHideOnScroll(false)
-
-        if (config.bottomNavigationBar) {
-            if (baseConfig.useSpeechToText) {
-                isSpeechToTextAvailable = isSpeechToTextAvailable()
-                binding.mainMenu.showSpeechToText = isSpeechToTextAvailable
-            }
-
-            binding.mainMenu.setupMenu()
-
-            binding.mainMenu.onSpeechToTextClickListener = {
-                speechToText()
-            }
-
-            binding.mainMenu.onSearchClosedListener = {
-                getAllFragments().forEach {
-                    it?.onSearchQueryChanged("")
+        binding.mainMenu.apply {
+            requireToolbar().inflateMenu(R.menu.menu)
+//            toggleHideOnScroll(false)
+            /*if (config.bottomNavigationBar) {
+                if (baseConfig.useSpeechToText) {
+                    isSpeechToTextAvailable = isSpeechToTextAvailable()
+                    showSpeechToText = isSpeechToTextAvailable
                 }
-            }
 
-            binding.mainMenu.onSearchTextChangedListener = { text ->
-                getCurrentFragment()?.onSearchQueryChanged(text)
-                binding.mainMenu.clearSearch()
-            }
-        } else setupSearch(binding.mainMenu.requireToolbar().menu)
+                setupMenu()
 
-        binding.mainMenu.requireToolbar().setOnMenuItemClickListener { menuItem ->
-            when (menuItem.itemId) {
-                R.id.sort -> showSortingDialog(showCustomSorting = getCurrentFragment() is FavoritesFragment)
-                R.id.filter -> showFilterDialog()
-                R.id.dialpad -> launchDialpad()
-                R.id.change_view_type -> changeViewType()
-                R.id.column_count -> changeColumnCount()
-                R.id.settings -> launchSettings()
-                R.id.about -> launchAbout()
-                else -> return@setOnMenuItemClickListener false
+                onSpeechToTextClickListener = {
+                    speechToText()
+                }
+
+                onSearchClosedListener = {
+                    getAllFragments().forEach {
+                        it?.onSearchQueryChanged("")
+                    }
+                }
+
+                onSearchTextChangedListener = { text ->
+                    getCurrentFragment()?.onSearchQueryChanged(text)
+                    clearSearch()
+                }
+            } else*/ setupSearch(requireToolbar().menu)
+            requireToolbar().setOnMenuItemClickListener { menuItem ->
+                when (menuItem.itemId) {
+                    R.id.sort -> showSortingDialog(showCustomSorting = getCurrentFragment() is FavoritesFragment)
+                    R.id.filter -> showFilterDialog()
+                    R.id.dialpad -> launchDialpad()
+                    R.id.change_view_type -> changeViewType()
+                    R.id.column_count -> changeColumnCount()
+                    R.id.settings -> launchSettings()
+                    R.id.about -> launchAbout()
+                    else -> return@setOnMenuItemClickListener false
+                }
+                return@setOnMenuItemClickListener true
             }
-            return@setOnMenuItemClickListener true
         }
     }
 
     private fun changeViewType() {
 //        ChangeViewTypeDialog(this) {
 //            refreshMenuItems()
-//            findViewById<FavoritesFragment>(R.id.favorites_fragment)?.updateFavouritesAdapter()
+//            getFavoritesFragment()?.updateFavouritesAdapter()
 //        }
         config.viewType = if (config.viewType == VIEW_TYPE_LIST) VIEW_TYPE_GRID else VIEW_TYPE_LIST
         refreshMenuItems()
-        findViewById<FavoritesFragment>(R.id.favorites_fragment)?.updateFavouritesAdapter()
+        getFavoritesFragment()?.updateFavouritesAdapter()
     }
 
     private fun changeColumnCount() {
@@ -312,7 +340,7 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
             val newColumnCount = it as Int
             if (currentColumnCount != newColumnCount) {
                 config.contactsGridColumnCount = newColumnCount
-                findViewById<FavoritesFragment>(R.id.favorites_fragment)?.columnCountChanged()
+                getFavoritesFragment()?.columnCountChanged()
             }
         }
     }
@@ -330,13 +358,18 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
     }
 
     private fun setupSearch(menu: Menu) {
-        val searchManager = getSystemService(Context.SEARCH_SERVICE) as SearchManager
+        updateMenuItemColors(menu)
+        val searchManager = getSystemService(SEARCH_SERVICE) as SearchManager
         mSearchMenuItem = menu.findItem(R.id.search)
-        (mSearchMenuItem!!.actionView as SearchView).apply {
+        mSearchView = (mSearchMenuItem!!.actionView as SearchView).apply {
             val textColor = getProperTextColor()
+            // Cache small padding calculation
+            val smallPadding = resources.getDimensionPixelSize(com.goodwy.commons.R.dimen.small_margin)
             findViewById<TextView>(androidx.appcompat.R.id.search_src_text).apply {
                 setTextColor(textColor)
                 setHintTextColor(textColor)
+                // Reduce left padding to a small value
+                setPadding(smallPadding, paddingTop, paddingRight, paddingBottom)
             }
             findViewById<ImageView>(androidx.appcompat.R.id.search_close_btn).apply {
                 setImageResource(com.goodwy.commons.R.drawable.ic_clear_round)
@@ -344,6 +377,8 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
             }
             findViewById<View>(androidx.appcompat.R.id.search_plate)?.apply { // search underline
                 background.setColorFilter(Color.TRANSPARENT, PorterDuff.Mode.MULTIPLY)
+                // Reduce left padding on the search plate to a small value
+                setPadding(smallPadding, paddingTop, paddingRight, paddingBottom)
             }
             setIconifiedByDefault(false)
             findViewById<ImageView>(androidx.appcompat.R.id.search_mag_icon).apply {
@@ -352,7 +387,7 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
 
             setSearchableInfo(searchManager.getSearchableInfo(componentName))
             isSubmitButtonEnabled = false
-            queryHint = getString(com.goodwy.commons.R.string.search) //getString(getSearchString())
+            queryHint = getString(R.string.search)
             setOnQueryTextListener(object : SearchView.OnQueryTextListener {
                 override fun onQueryTextSubmit(query: String) = false
 
@@ -369,10 +404,30 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
         @Suppress("DEPRECATION")
         MenuItemCompat.setOnActionExpandListener(mSearchMenuItem, object : MenuItemCompat.OnActionExpandListener {
             override fun onMenuItemActionExpand(item: MenuItem?): Boolean {
-                //getCurrentFragment()?.onSearchOpened()
                 isSearchOpen = true
-                binding.mainDialpadButton.beGone()
-                binding.mainAddButton.beGone()
+                // Keep dialpad button visible when search is opened
+
+                // Animate search bar appearance with smooth translation (slide in from right)
+                mSearchView?.let { searchView ->
+                    searchView.post {
+                        // Get the parent toolbar width for smooth slide-in
+                        val toolbar = binding.mainMenu.requireToolbar()
+                        val slideDistance = toolbar.width.toFloat()
+
+                        // Start from right side
+                        searchView.translationX = slideDistance
+                        searchView.alpha = 0f
+
+                        // Animate to center with smooth deceleration
+                        searchView.animate()
+                            .translationX(0f)
+                            .alpha(1f)
+                            .setDuration(350)
+                            .setInterpolator(android.view.animation.DecelerateInterpolator(1.5f))
+                            .start()
+                    }
+                }
+
                 return true
             }
 
@@ -382,8 +437,27 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
                 }
 
                 isSearchOpen = false
-                binding.mainDialpadButton.beVisibleIf(config.showDialpadButton)
-                binding.mainAddButton.beVisible()
+
+                // Animate search bar disappearance with smooth translation (slide out to right)
+                mSearchView?.let { searchView ->
+                    val toolbar = binding.mainMenu.requireToolbar()
+                    val slideDistance = toolbar.width.toFloat()
+
+                    searchView.animate()
+                        .translationX(slideDistance)
+                        .alpha(0f)
+                        .setDuration(300)
+                        .setInterpolator(android.view.animation.AccelerateInterpolator(1.2f))
+                        .withEndAction {
+                            searchView.translationX = 0f
+                            searchView.alpha = 1f
+                            binding.mainDialpadButton.beGone() // Always hide the dialpad button
+                        }
+                        .start()
+                } ?: run {
+                    binding.mainDialpadButton.beGone() // Always hide the dialpad button
+                }
+
                 return true
             }
         })
@@ -433,15 +507,15 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
         val fragments = arrayListOf<MyViewPagerFragment<*>>()
 
         if (showTabs and TAB_FAVORITES != 0) {
-            fragments.add(findViewById(R.id.favorites_fragment))
+            getFavoritesFragment()?.let { fragments.add(it) }
         }
 
         if (showTabs and TAB_CONTACTS != 0) {
-            fragments.add(findViewById(R.id.contacts_fragment))
+            getContactsFragment()?.let { fragments.add(it) }
         }
 
         if (showTabs and TAB_GROUPS != 0) {
-            fragments.add(findViewById(R.id.groups_fragment))
+            getGroupsFragment()?.let { fragments.add(it) }
         }
 
         return fragments.getOrNull(binding.viewPager.currentItem)
@@ -452,14 +526,9 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
 
         // bottom tab bar
         if (config.bottomNavigationBar) {
-            val activeView = binding.mainTabsHolder.getTabAt(binding.viewPager.currentItem)?.customView
-            updateBottomTabItemColors(activeView, true, getSelectedTabDrawableIds()[binding.viewPager.currentItem])
-
-            getInactiveTabIndexes(binding.viewPager.currentItem).forEach { index ->
-                val inactiveView = binding.mainTabsHolder.getTabAt(index)?.customView
-                updateBottomTabItemColors(inactiveView, false, getDeselectedTabDrawableIds()[index])
-            }
-
+            // MyLiquidNavigationView handles colors internally through Compose
+            // No need to manually update tab item colors
+            
             val bottomBarColor =
                 if (isDynamicTheme() && !isSystemInDarkMode()) getColoredMaterialStatusBarColor()
                 else getSurfaceColor()
@@ -596,6 +665,14 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
         return icons
     }
 
+    private fun getTabIconResId(position: Int): Int {
+        return when (position) {
+            LOCATION_FAVORITES_TAB -> com.goodwy.commons.R.drawable.ic_star_vector
+            LOCATION_CONTACTS_TAB -> com.goodwy.commons.R.drawable.ic_person_rounded
+            else -> R.drawable.ic_people_rounded
+        }
+    }
+
     private fun initFragments() {
         binding.viewPager.offscreenPageLimit = 2 //tabsList.size - 1
         binding.viewPager.addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
@@ -631,9 +708,9 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
 
         binding.mainAddButton.setOnClickListener {
             when (getCurrentFragment()) {
-                findViewById<FavoritesFragment>(R.id.favorites_fragment) -> findViewById<FavoritesFragment>(R.id.favorites_fragment).fabClicked()
-                findViewById<ContactsFragment>(R.id.contacts_fragment) -> findViewById<ContactsFragment>(R.id.contacts_fragment).fabClicked()
-                findViewById<GroupsFragment>(R.id.groups_fragment) -> findViewById<GroupsFragment>(R.id.groups_fragment).fabClicked()
+                getFavoritesFragment() -> getFavoritesFragment()?.fabClicked()
+                getContactsFragment() -> getContactsFragment()?.fabClicked()
+                getGroupsFragment() -> getGroupsFragment()?.fabClicked()
             }
         }
 
@@ -653,7 +730,7 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
 
         // selecting the proper tab sometimes glitches, add an extra selector to make sure we have it right
         binding.mainTopTabsHolder.onGlobalLayout {
-            Handler().postDelayed({
+            mainHandler.postDelayed({
                 binding.mainTopTabsHolder.getTabAt(getDefaultTab())?.select()
                 invalidateOptionsMenu()
                 refreshMenuItems()
@@ -711,15 +788,19 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
     }
 
     private fun scrollingChanged(newScrollY: Int, surfaceColor: Boolean) {
-        if (newScrollY > 0 && currentOldScrollY == 0) {
-            val colorFrom = if (surfaceColor) getSurfaceColor() else getProperBackgroundColor()
-            val colorTo = getColoredMaterialStatusBarColor()
-            animateMySearchMenuColors(colorFrom, colorTo)
-        } else if (newScrollY == 0 && currentOldScrollY > 0) {
-            val colorFrom = if (surfaceColor) getSurfaceColor() else getProperBackgroundColor()
-            val colorTo = getRequiredStatusBarColor(surfaceColor)
-            animateMySearchMenuColors(colorFrom, colorTo)
+        val colorFrom = if (surfaceColor) {
+            getSurfaceColor()
+        } else {
+            getProperBackgroundColor()
         }
+        val colorTo = if (newScrollY > 0 && currentOldScrollY == 0) {
+            getColoredMaterialStatusBarColor()
+        } else if (newScrollY == 0 && currentOldScrollY > 0) {
+            getRequiredStatusBarColor(surfaceColor)
+        } else {
+            return
+        }
+        animateMySearchMenuColors(colorFrom, colorTo)
     }
 
     override fun getStartRequiredStatusBarColor(): Int {
@@ -732,28 +813,43 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
         }
     }
 
+    // Tab configuration data class for better organization
+    private data class TabConfig(
+        val iconRes: Int,
+        val labelRes: Int
+    )
+    
+    private val tabConfigs = arrayOf(
+        TabConfig(com.goodwy.commons.R.drawable.ic_star_vector, com.goodwy.commons.R.string.favorites_tab),
+        TabConfig(com.goodwy.commons.R.drawable.ic_person_rounded, com.goodwy.commons.R.string.contacts_tab),
+        TabConfig(R.drawable.ic_people_rounded, com.goodwy.commons.R.string.groups_tab)
+    )
+
+    private fun getTabLabelFromConfig(position: Int): String {
+        val config = tabConfigs.getOrNull(position) ?: tabConfigs.last()
+        return resources.getString(config.labelRes)
+    }
+
+    private fun getTabIconRes(position: Int): Int {
+        val config = tabConfigs.getOrNull(position) ?: tabConfigs.last()
+        return config.iconRes
+    }
+
     private fun setupTabs() {
         // bottom tab bar
+        binding.viewPager.adapter = null
         binding.mainTabsHolder.removeAllTabs()
         tabsList.forEachIndexed { index, value ->
             if (config.showTabs and value != 0) {
-                binding.mainTabsHolder.newTab().setCustomView(com.goodwy.commons.R.layout.bottom_tablayout_item).apply tab@{
-                    customView?.let {
-                        BottomTablayoutItemBinding.bind(it)
-                    }?.apply {
-                        tabItemIcon.setImageDrawable(getTabIcon(index))
-                        tabItemLabel.text = getTabLabel(index)
-                        tabItemLabel.beGoneIf(config.useIconTabs)
-                        AutofitHelper.create(tabItemLabel)
-                        binding.mainTabsHolder.addTab(this@tab)
-                    }
-                }
+                val tab = binding.mainTabsHolder.newTab()
+                tab.setIcon(getTabIconRes(index))
+                tab.setText(getTabLabelFromConfig(index))
+                binding.mainTabsHolder.addTab(tab)
             }
         }
 
         binding.mainTabsHolder.onTabSelectionChanged(
             tabUnselectedAction = {
-                updateBottomTabItemColors(it.customView, false, getDeselectedTabDrawableIds()[it.position])
             },
             tabSelectedAction = {
                 if (config.closeSearch) {
@@ -765,7 +861,11 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
                 }
 
                 binding.viewPager.currentItem = it.position
-                updateBottomTabItemColors(it.customView, true, getSelectedTabDrawableIds()[it.position])
+
+//                val lastPosition = binding.mainTabsHolder.tabCount - 1
+//                if (it.position == lastPosition && config.showTabs and TAB_CALL_HISTORY > 0) {
+//                    clearMissedCalls()
+//                }
 
                 if (config.openSearch) {
                     if (getCurrentFragment() is ContactsFragment) {
@@ -775,7 +875,10 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
             }
         )
 
-        binding.mainTabsHolder.beGoneIf(binding.mainTabsHolder.tabCount == 1 || !config.bottomNavigationBar)
+        binding.mainTabsHolder.beGoneIf(binding.mainTabsHolder.tabCount == 1)
+        storedShowTabs = config.showTabs
+        storedStartNameWithSurname = config.startNameWithSurname
+        storedShowPhoneNumbers = config.showPhoneNumbers
     }
 
     private fun showSortingDialog(showCustomSorting: Boolean) {
@@ -786,7 +889,7 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
 
     fun showFilterDialog() {
         FilterContactSourcesDialog(this) {
-            findViewById<MyViewPagerFragment<*>>(R.id.contacts_fragment)?.forceListRedraw = true
+            getContactsFragment()?.forceListRedraw = true
             refreshContacts(TAB_CONTACTS or TAB_FAVORITES)
         }
     }
@@ -841,24 +944,22 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
             }
 
             if (refreshTabsMask and TAB_FAVORITES != 0) {
-                findViewById<MyViewPagerFragment<*>>(R.id.favorites_fragment)?.apply {
+                getFavoritesFragment()?.apply {
                     skipHashComparing = true
                     refreshContacts(contacts)
                 }
             }
 
             if (refreshTabsMask and TAB_CONTACTS != 0) {
-                findViewById<MyViewPagerFragment<*>>(R.id.contacts_fragment)?.apply {
+                getContactsFragment()?.apply {
                     skipHashComparing = true
                     refreshContacts(contacts)
                 }
             }
 
             if (refreshTabsMask and TAB_GROUPS != 0) {
-                findViewById<MyViewPagerFragment<*>>(R.id.groups_fragment)?.apply {
-//                    if (refreshTabsMask == TAB_GROUPS) {
-                        skipHashComparing = true
-//                    }
+                getGroupsFragment()?.apply {
+                    skipHashComparing = true
                     refreshContacts(contacts)
                 }
             }
@@ -874,10 +975,37 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
     }
 
     private fun getAllFragments() = arrayListOf<MyViewPagerFragment<*>?>(
-        findViewById(R.id.favorites_fragment),
-        findViewById(R.id.contacts_fragment),
-        findViewById(R.id.groups_fragment)
+        getFavoritesFragment(),
+        getContactsFragment(),
+        getGroupsFragment()
     )
+    
+    private fun getContactsFragment(): ContactsFragment? {
+        if (cachedContactsFragment == null) {
+            cachedContactsFragment = findViewById(R.id.contacts_fragment)
+        }
+        return cachedContactsFragment
+    }
+
+    private fun getFavoritesFragment(): FavoritesFragment? {
+        if (cachedFavoritesFragment == null) {
+            cachedFavoritesFragment = findViewById(R.id.favorites_fragment)
+        }
+        return cachedFavoritesFragment
+    }
+
+    private fun getGroupsFragment(): GroupsFragment? {
+        if (cachedGroupsFragment == null) {
+            cachedGroupsFragment = findViewById(R.id.groups_fragment)
+        }
+        return cachedGroupsFragment
+    }
+    
+    private fun clearFragmentCache() {
+        cachedContactsFragment = null
+        cachedFavoritesFragment = null
+        cachedGroupsFragment = null
+    }
 
     private fun getDefaultTab(): Int {
         val showTabsMask = config.showTabs

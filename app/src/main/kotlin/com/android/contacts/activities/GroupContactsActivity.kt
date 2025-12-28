@@ -38,18 +38,11 @@ class GroupContactsActivity : SimpleActivity(), RemoveFromGroupListener, Refresh
     protected var contact: Contact? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        isMaterialActivity = true
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
         updateTextColors(binding.groupContactsCoordinator)
         setupOptionsMenu()
-
-        updateMaterialActivityViews(
-            mainCoordinatorLayout = binding.groupContactsCoordinator,
-            nestedView = binding.groupContactsList,
-            useTransparentNavigation = true,
-            useTopSearchMenu = false
-        )
+        setupEdgeToEdge(padBottomImeAndSystem = listOf(binding.groupContactsCoordinator))
 
         val useSurfaceColor = isDynamicTheme() && !isSystemInDarkMode()
         // setupMaterialScrollListener expects MyAppBarLayout, but we have MaterialToolbar - using setupToolbar instead
@@ -82,13 +75,8 @@ class GroupContactsActivity : SimpleActivity(), RemoveFromGroupListener, Refresh
         super.onResume()
         refreshContacts()
 
-        val useSurfaceColor = isDynamicTheme() && !isSystemInDarkMode()
-        val backgroundColor = if (useSurfaceColor) getSurfaceColor() else getProperBackgroundColor()
-        setupToolbar(
-            toolbar = binding.groupContactsToolbar,
-            toolbarNavigationIcon = NavigationIcon.Arrow,
-            statusBarColor = backgroundColor,
-        )
+        val properBackgroundColor = if (isDynamicTheme() && !isSystemInDarkMode()) getSurfaceColor() else getProperBackgroundColor()
+        setupTopAppBar(binding.groupContactsAppbar, NavigationIcon.Arrow, topBarColor = properBackgroundColor)
         (binding.groupContactsFab.layoutParams as CoordinatorLayout.LayoutParams).bottomMargin =
             navigationBarHeight + resources.getDimension(com.goodwy.commons.R.dimen.activity_margin).toInt()
     }
