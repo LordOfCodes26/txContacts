@@ -78,20 +78,14 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
     private val binding by viewBinding(ActivityMainBinding::inflate)
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        isMaterialActivity = true
-        updateNavigationBarColor = false
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
         appLaunched(BuildConfig.APPLICATION_ID)
         setupOptionsMenu()
         refreshMenuItems()
         val useBottomNavigationBar = config.bottomNavigationBar
-        updateMaterialActivityViews(
-            binding.mainCoordinator,
-            binding.mainHolder,
-            useTransparentNavigation = false,
-            useTopSearchMenu = useBottomNavigationBar
-        )
+        setupEdgeToEdge(padBottomImeAndSystem = listOf(binding.mainTabsHolder))
+
         storeStateVariables()
         checkContactPermissions()
         setupTabs()
