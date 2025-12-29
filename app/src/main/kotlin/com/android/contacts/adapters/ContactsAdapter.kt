@@ -114,6 +114,16 @@ class ContactsAdapter(
             findItem(R.id.cab_delete).isVisible = location == LOCATION_CONTACTS_TAB || location == LOCATION_GROUP_CONTACTS
             findItem(R.id.cab_create_shortcut).isVisible =
                 isOreoPlus() && isOneItemSelected() && (location == LOCATION_FAVORITES_TAB || location == LOCATION_CONTACTS_TAB)
+            
+            // Show move option only for contacts that are on SIM or phone storage
+            val selectedItems = getSelectedItems()
+            val canMove = selectedItems.isNotEmpty() && selectedItems.all { contact ->
+                val sourceType = ContactsHelper(activity).getContactSourceType(contact.source)
+                val isSimOrPhone = sourceType.contains(".sim") || sourceType.contains("icc") || 
+                    (contact.source.isEmpty() && sourceType.isEmpty())
+                isSimOrPhone
+            }
+            findItem(R.id.cab_move).isVisible = canMove && (location == LOCATION_CONTACTS_TAB || location == LOCATION_FAVORITES_TAB || location == LOCATION_GROUP_CONTACTS)
 
             if (location == LOCATION_GROUP_CONTACTS) {
                 findItem(R.id.cab_remove).title = activity.getString(R.string.remove_from_group)
@@ -138,6 +148,7 @@ class ContactsAdapter(
             R.id.cab_create_shortcut -> createShortcut()
             R.id.cab_remove -> removeContacts()
             R.id.cab_delete -> askConfirmDelete()
+            R.id.cab_move -> moveContacts()
         }
     }
 
@@ -322,6 +333,57 @@ class ContactsAdapter(
                     refreshListener?.refreshContacts(TAB_GROUPS)
                 }
                 finishActMode()
+            }
+        }
+    }
+
+    private fun moveContacts() {
+        val selectedContacts = getSelectedItems()
+        if (selectedContacts.isEmpty()) {
+            return
+        }
+
+        // Get available destinations based on the first contact (they should all be from SIM/phone storage)
+        val firstContact = selectedContacts.first()
+        val contactsHelper = ContactsHelper(activity)
+        val destinations = contactsHelper.getAvailableMoveDestinations(firstContact)
+        
+        if (destinations.isEmpty()) {
+            activity.toast(R.string.no_move_destinations_available)
+            return
+        }
+
+        val items = ArrayList<RadioItem>()
+        destinations.forEachIndexed { index, source ->
+            val displayName = if (source.publicName.isNotEmpty()) {
+                source.publicName
+            } else if (source.name.isNotEmpty()) {
+                source.name
+            } else {
+                activity.getString(R.string.phone_storage)
+            }
+            items.add(RadioItem(index, displayName, source.name))
+        }
+
+        val blurTarget = activity.findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+            ?: throw IllegalStateException("mainBlurTarget not found")
+        
+        RadioGroupDialog(activity, items, 0, titleId = R.string.move_contacts_to, blurTarget = blurTarget) {
+            val destinationSource = it as String
+            ensureBackgroundThread {
+                contactsHelper.moveContacts(selectedContacts, destinationSource) { success, copiedCount ->
+                    activity.runOnUiThread {
+                        if (success) {
+                            activity.toast(activity.resources.getQuantityString(
+                                com.goodwy.commons.R.plurals.contacts_moved, copiedCount, copiedCount
+                            ))
+                            refreshListener?.refreshContacts(ALL_TABS_MASK)
+                        } else {
+                            activity.toast(com.goodwy.commons.R.string.unknown_error_occurred)
+                        }
+                        finishActMode()
+                    }
+                }
             }
         }
     }

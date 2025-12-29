@@ -1129,7 +1129,7 @@ class ContactsHelper(val context: Context) {
     // Cache contact sources map for O(1) lookup instead of O(n) firstOrNull
     private var cachedContactSourcesMap: Map<String, String>? = null
     
-    private fun getContactSourceType(accountName: String): String {
+    fun getContactSourceType(accountName: String): String {
         if (cachedContactSourcesMap == null) {
             cachedContactSourcesMap = getDeviceContactSources().associateBy({ it.name }, { it.type })
         }
@@ -1775,6 +1775,93 @@ class ContactsHelper(val context: Context) {
                 }
             }
         }
+    }
+
+    fun moveContacts(contacts: ArrayList<Contact>, destinationSource: String, callback: (success: Boolean, movedCount: Int) -> Unit) {
+        ensureBackgroundThread {
+            if (!context.hasPermission(PERMISSION_WRITE_CONTACTS)) {
+                callback(false, 0)
+                return@ensureBackgroundThread
+            }
+
+            var copiedCount = 0
+            var failedCount = 0
+
+            try {
+                contacts.forEach { contact ->
+                    // Get full contact data before copying
+                    val fullContact = getContactWithId(contact.id)
+                    if (fullContact == null) {
+                        failedCount++
+                        return@forEach
+                    }
+
+                    // Create a copy of the contact with the new source
+                    val newContact = fullContact.copy()
+                    newContact.source = destinationSource
+                    newContact.id = 0 // Reset ID for new contact
+                    newContact.contactId = 0
+
+                    // Insert contact to new location (copy, don't delete original)
+                    val insertSuccess = insertContact(newContact)
+                    
+                    if (insertSuccess) {
+                        copiedCount++
+                    } else {
+                        failedCount++
+                    }
+                }
+
+                callback(copiedCount > 0, copiedCount)
+            } catch (e: Exception) {
+                context.showErrorToast(e)
+                callback(false, copiedCount)
+            }
+        }
+    }
+
+    fun getAvailableMoveDestinations(contact: Contact): ArrayList<ContactSource> {
+        val destinations = ArrayList<ContactSource>()
+        val allSources = getDeviceContactSources()
+        val currentSourceType = getContactSourceType(contact.source)
+        val currentSourceName = contact.source
+        val isCurrentSim = currentSourceType.contains(".sim") || currentSourceType.contains("icc")
+        val isCurrentPhoneStorage = (currentSourceName.isEmpty() && currentSourceType.isEmpty()) ||
+            (currentSourceName.lowercase(Locale.getDefault()) == "phone" && currentSourceType.isEmpty())
+        
+        // Add phone storage as an option (if not already on phone storage)
+        if (!isCurrentPhoneStorage) {
+            destinations.add(ContactSource("", "", context.getString(R.string.phone_storage)))
+        }
+        
+        // Add SIM sources (excluding the current one)
+        allSources.forEach { source ->
+            val sourceType = source.type.lowercase(Locale.getDefault())
+            val isSim = sourceType.contains("sim") || sourceType.contains("icc")
+            
+            if (isSim) {
+                // Check if this is a different SIM than the current one
+                val isDifferentSim = if (isCurrentSim) {
+                    // Current contact is on SIM, check if this is a different SIM
+                    // Compare both name and type to identify different SIM cards
+                    val currentName = currentSourceName.lowercase(Locale.getDefault())
+                    val sourceName = source.name.lowercase(Locale.getDefault())
+                    val currentType = currentSourceType.lowercase(Locale.getDefault())
+                    val sourceTypeLower = sourceType
+                    // Different if names don't match OR types don't match (SIM1 vs SIM2, etc.)
+                    currentName != sourceName || currentType != sourceTypeLower
+                } else {
+                    // Current contact is not on SIM, so any SIM is valid
+                    true
+                }
+                
+                if (isDifferentSim) {
+                    destinations.add(source)
+                }
+            }
+        }
+        
+        return destinations
     }
 
     fun deleteContacts(contacts: ArrayList<Contact>): Boolean {

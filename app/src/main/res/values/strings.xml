@@ -43,6 +43,9 @@
     <string name="create_group">Create group</string>
     <string name="add_to_group">Add to group</string>
     <string name="create_group_under_account">Create group under account</string>
+    <string name="move_contacts">Move contacts</string>
+    <string name="move_contacts_to">Move contacts to</string>
+    <string name="no_move_destinations_available">No move destinations available</string>
 
     <!-- Photo -->
     <string name="remove_photo">Remove photo</string>

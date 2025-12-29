@@ -59,4 +59,9 @@
         android:icon="@drawable/ic_minus_circle_vector"
         android:title="@string/remove_from_favorites"
         app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/cab_move"
+        android:icon="@drawable/ic_share_vector"
+        android:title="@string/move_contacts"
+        app:showAsAction="ifRoom" />
 </menu>

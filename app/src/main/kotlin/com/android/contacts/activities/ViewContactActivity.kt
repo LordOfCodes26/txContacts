@@ -36,6 +36,9 @@ import com.android.contacts.dialogs.ChooseSocialDialog
 import com.android.contacts.dialogs.ManageVisibleFieldsDialog
 import com.android.contacts.extensions.*
 import com.android.contacts.helpers.*
+import org.joda.time.DateTime
+import org.joda.time.Years
+import org.joda.time.format.DateTimeFormat
 import java.util.Locale
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.net.toUri
@@ -904,7 +907,7 @@ class ViewContactActivity : ContactActivity() {
             events.forEach {
                 ItemViewEventBinding.inflate(layoutInflater, binding.contactEventsHolder, false).apply {
                     binding.contactEventsHolder.addView(root)
-                    it.value.getDateTimeFromDateString(true, contactEvent)
+                    formatDateWithCustomFormat(it.value, true, contactEvent)
                     contactEventType.setText(getEventTypeText(it.type, it.label))
                     root.copyOnLongClick(it.value)
 
@@ -1409,5 +1412,89 @@ class ViewContactActivity : ContactActivity() {
             copyToClipboard(value)
             true
         }
+    }
+
+    /**
+     * Formats a date string using the "yyyy.MM.dd" format and updates the TextView.
+     * This is a custom implementation to ensure dates are always displayed in yyyy.MM.dd format.
+     */
+    private fun formatDateWithCustomFormat(dateString: String, showYearsSince: Boolean, viewToUpdate: android.widget.TextView?) {
+        if (dateString.isEmpty()) {
+            viewToUpdate?.text = getString(com.goodwy.commons.R.string.unknown)
+            return
+        }
+
+        // Build list of formats to try, starting with user's configured format
+        val dateFormats = mutableListOf<String>()
+        
+        // First, try user's configured date format
+        val userDateFormat = baseConfig.dateFormat
+        if (userDateFormat.isNotEmpty()) {
+            dateFormats.add(userDateFormat)
+            
+            // Also try without year if format includes year
+            if (userDateFormat.contains("y")) {
+                val formatWithoutYear = userDateFormat
+                    .replace("yyyy", "")
+                    .replace("yy", "")
+                    .replace("y", "")
+                    .replace("  ", " ")
+                    .trim()
+                    .trimStart('-', '.', '/', ' ')
+                    .trimEnd('-', '.', '/', ' ')
+                    .replace(Regex("[-./]{2,}"), "-")
+                if (formatWithoutYear.isNotEmpty()) {
+                    dateFormats.add(formatWithoutYear)
+                }
+            }
+        }
+        
+        // Add standard date formats
+        dateFormats.addAll(getDateFormats())
+        
+        // Add additional common formats
+        dateFormats.addAll(listOf(
+            "dd.MM.yyyy", "dd/MM/yyyy", "MM/dd/yyyy",
+            "MM-dd-yyyy", "dd-MM-yyyy", "dd.MM.yy",
+            "dd/MM/yy", "MM/dd/yy", "dd-MM", "dd.MM"
+        ))
+        
+        var date: DateTime? = null
+        var hasYear = true
+        
+        // Try to parse the date string with each format
+        for (format in dateFormats) {
+            try {
+                val parsedDate = DateTime.parse(dateString, DateTimeFormat.forPattern(format))
+                date = parsedDate
+                hasYear = format.contains("y")
+                
+                // If format doesn't have year, set to current year
+                if (!hasYear) {
+                    date = date.withYear(DateTime().year)
+                    hasYear = true // We now have a year
+                }
+                break
+            } catch (_: Exception) {
+                // Try next format
+            }
+        }
+        
+        // If we couldn't parse the date, show unknown
+        if (date == null) {
+            viewToUpdate?.text = getString(com.goodwy.commons.R.string.unknown)
+            return
+        }
+        
+        // Format using fixed format yyyy.MM.dd
+        val customFormat = "yyyy.MM.dd"
+        val formatter = DateTimeFormat.forPattern(customFormat)
+        var formattedString = formatter.print(date)
+        
+        if (showYearsSince && hasYear) {
+            formattedString += " (${Years.yearsBetween(date, DateTime.now()).years})"
+        }
+        
+        viewToUpdate?.text = formattedString
     }
 }
