@@ -35,6 +35,7 @@ fun SimpleActivity.startCallIntent(recipient: String) {
         Intent(action).apply {
             data = Uri.fromParts("tel", recipient, null)
             putExtra(IS_RIGHT_APP, BuildConfig.RIGHT_APP_KEY)
+            setPackage("com.android.dialer")
             launchActivityIntent(this)
         }
     }
