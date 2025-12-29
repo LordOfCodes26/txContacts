@@ -371,6 +371,18 @@ class EditContactActivity : ContactActivity() {
             }
             insets
         }
+        
+        // Optimize scrolling performance
+        optimizeScrolling()
+    }
+    
+    private fun optimizeScrolling() {
+        binding.contactScrollview.apply {
+            // Reduce over-scroll effects for better performance
+            overScrollMode = View.OVER_SCROLL_NEVER
+            // Enable smooth scrolling
+            isNestedScrollingEnabled = true
+        }
     }
 
     private fun setupMenu() {
@@ -516,7 +528,7 @@ class EditContactActivity : ContactActivity() {
 
         // Hide dividers for hidden name fields - use single name field
         binding.dividerContactPrefix.beGone()
-        binding.dividerContactFirstName.beVisibleIf(showFields and SHOW_FIRST_NAME_FIELD != 0 && isOrganizationVisible)
+        // dividerContactFirstName removed - now inside CardView
         binding.dividerContactMiddleName.beGone()
         binding.dividerContactSurname.beGone()
         binding.dividerContactSuffix.beGone()
@@ -590,15 +602,8 @@ class EditContactActivity : ContactActivity() {
     }
 
     private fun setupNames() {
-        contact!!.apply {
-            // Use single name field - store in firstName
-            binding.contactFirstName.setText(firstName)
-            binding.contactPrefix.setText("")
-            binding.contactMiddleName.setText("")
-            binding.contactSurname.setText("")
-            binding.contactSuffix.setText("")
-            binding.contactNickname.setText("") // Nickname removed
-        }
+        // Use single name field - store in firstName
+        binding.contactFirstName.setText(contact!!.firstName)
     }
 
     private fun setupOrganization() {
@@ -1067,23 +1072,35 @@ class EditContactActivity : ContactActivity() {
         }
     }
 
+    private fun setupTitleHolderBackgrounds() {
+        // Set background colors for title holders to ensure visibility in light mode
+        arrayOf(
+            binding.contactNumbersTitleHolder,
+            binding.contactEmailsTitleHolder,
+            binding.contactAddressesTitleHolder,
+            binding.contactEventsTitleHolder,
+            binding.contactNotesTitleHolder,
+            binding.contactRingtoneTitleHolder,
+            binding.contactWebsitesTitleHolder,
+            binding.contactRelationsTitleHolder,
+            binding.contactGroupsTitleHolder,
+            binding.contactSourceTitleHolder
+        ).forEach {
+            it.setBackgroundColor(surfaceColor)
+        }
+    }
+
     // Creates blank lines when opening an edit
     private fun setupTypePickers() {
         val getProperTextColor = getProperTextColor()
         val getProperPrimaryColor = getProperPrimaryColor()
 
-        binding.contactPrefix.setBackgroundColor(surfaceColor)
-        binding.dividerContactPrefix.setBackgroundColor(getProperTextColor)
+        // Set background colors for title holders to ensure visibility in light mode
+        setupTitleHolderBackgrounds()
+
+        // Hidden name fields (prefix, middleName, surname, suffix, nickname) are always gone
+        // Only firstName is visible and it's inside a CardView
         binding.contactFirstName.setBackgroundColor(surfaceColor)
-        binding.dividerContactFirstName.setBackgroundColor(getProperTextColor)
-        binding.contactMiddleName.setBackgroundColor(surfaceColor)
-        binding.dividerContactMiddleName.setBackgroundColor(getProperTextColor)
-        binding.contactSurname.setBackgroundColor(surfaceColor)
-        binding.dividerContactSurname.setBackgroundColor(getProperTextColor)
-        binding.contactSuffix.setBackgroundColor(surfaceColor)
-        binding.dividerContactSuffix.setBackgroundColor(getProperTextColor)
-        binding.contactNickname.setBackgroundColor(surfaceColor)
-        binding.dividerContactNickname.setBackgroundColor(getProperTextColor)
         binding.contactOrganizationCompany.setBackgroundColor(surfaceColor)
         binding.dividerContactOrganizationCompany.setBackgroundColor(getProperTextColor)
         binding.contactOrganizationJobPosition.setBackgroundColor(surfaceColor)
@@ -1492,10 +1509,12 @@ class EditContactActivity : ContactActivity() {
             return
         }
 
-        // Use single name field - only check firstName (nickname removed)
+        // Use single name field - only check firstName
         val contactFields = arrayListOf(
             binding.contactFirstName,
-            binding.contactNotes, binding.contactOrganizationCompany, binding.contactOrganizationJobPosition
+            binding.contactNotes,
+            binding.contactOrganizationCompany,
+            binding.contactOrganizationJobPosition
         )
 
         if (contactFields.all { it.value.isEmpty() }) {
@@ -1542,14 +1561,14 @@ class EditContactActivity : ContactActivity() {
         val filledWebsites = getFilledWebsites()
         val filledRelations = getFilledRelations()
 
-        // Use single name field - store in firstName, clear other name fields
+        // Use single name field - store in firstName
         val newContact = contact!!.copy(
             prefix = "",
             firstName = binding.contactFirstName.value,
             middleName = "",
             surname = "",
             suffix = "",
-            nickname = "", // Nickname removed
+            nickname = "",
             photoUri = currentContactPhotoPath,
             phoneNumbers = filledPhoneNumbers,
             emails = filledEmails,
@@ -1559,7 +1578,7 @@ class EditContactActivity : ContactActivity() {
             starred = if (isContactStarred()) 1 else 0,
             notes = binding.contactNotes.value,
             websites = filledWebsites,
-            relations = filledRelations,
+            relations = filledRelations
         )
 
         val company = binding.contactOrganizationCompany.value
