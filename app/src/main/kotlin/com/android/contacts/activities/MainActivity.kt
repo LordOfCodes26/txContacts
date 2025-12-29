@@ -280,6 +280,7 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
             findItem(R.id.search).isVisible = /*!config.bottomNavigationBar*/ true
             findItem(R.id.sort).isVisible = currentFragment != groupsFragment
             findItem(R.id.filter).isVisible = currentFragment != groupsFragment
+            findItem(R.id.select).isVisible = currentFragment != null
             //findItem(R.id.dialpad).isVisible = !config.showDialpadButton
             findItem(R.id.change_view_type).isVisible = currentFragment == favoritesFragment
             findItem(R.id.column_count).isVisible = currentFragment == favoritesFragment && config.viewType == VIEW_TYPE_GRID
@@ -294,11 +295,12 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
                 when (menuItem.itemId) {
                     R.id.sort -> showSortingDialog(showCustomSorting = getCurrentFragment() is FavoritesFragment)
                     R.id.filter -> showFilterDialog()
+                    R.id.select -> startActionMode()
                     R.id.dialpad -> launchDialpad()
                     R.id.change_view_type -> changeViewType()
                     R.id.column_count -> changeColumnCount()
                     R.id.settings -> launchSettings()
-                    R.id.about -> launchAbout()
+//                    R.id.about -> launchAbout()
                     else -> return@setOnMenuItemClickListener false
                 }
                 return@setOnMenuItemClickListener true
@@ -849,6 +851,12 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
                 }
             }
         }
+    }
+
+    private fun startActionMode() {
+        val currentFragment = getCurrentFragment()
+        val adapter = currentFragment?.myRecyclerView()?.adapter as? com.goodwy.commons.adapters.MyRecyclerViewAdapter
+        adapter?.startActMode()
     }
 
     private fun launchSettings() {

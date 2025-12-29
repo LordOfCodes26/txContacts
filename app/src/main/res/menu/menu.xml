@@ -20,6 +20,11 @@
         android:title="@string/filter"
         app:showAsAction="never" />
     <item
+        android:id="@+id/select"
+        android:icon="@drawable/ic_check_circle_vector"
+        android:title="@string/select"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/dialpad"
         android:icon="@drawable/ic_dialpad_vector"
         android:title="@string/dialpad"
@@ -38,9 +43,4 @@
         android:icon="@drawable/ic_more_horiz"
         android:title="@string/settings"
         app:showAsAction="never" />
-    <item
-        android:id="@+id/about"
-        android:icon="@drawable/ic_info_vector"
-        android:title="@string/about"
-        app:showAsAction="never"/>
 </menu>

@@ -1,9 +1,14 @@
 package com.android.contacts.adapters
 
+import android.annotation.SuppressLint
 import android.util.TypedValue
+import android.view.ContextThemeWrapper
+import android.view.Gravity
 import android.view.Menu
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.PopupMenu
 import com.behaviorule.arturdumchev.library.pixels
 import com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller
 import com.goodwy.commons.adapters.MyRecyclerViewAdapter
@@ -38,19 +43,36 @@ class GroupsAdapter(
     override fun getActionMenuId() = R.menu.cab_groups
 
     override fun prepareActionMode(menu: Menu) {
+        val allSelected = selectedKeys.size == getSelectableItemCount() && getSelectableItemCount() > 0
+        val noneSelected = selectedKeys.isEmpty()
+        
         menu.apply {
             findItem(R.id.cab_rename).isVisible = isOneItemSelected()
+            // Show/hide select_all and deselect_all based on selection state
+            findItem(R.id.cab_select_all).isVisible = !allSelected && getSelectableItemCount() > 0
+            findItem(R.id.cab_deselect_all).isVisible = !noneSelected
         }
     }
 
     override fun actionItemPressed(id: Int) {
+        // Allow select_all and deselect_all to work even when no items are selected
+        when (id) {
+            R.id.cab_select_all -> {
+                selectAll()
+                return
+            }
+            R.id.cab_deselect_all -> {
+                deselectAll()
+                return
+            }
+        }
+
         if (selectedKeys.isEmpty()) {
             return
         }
 
         when (id) {
             R.id.cab_rename -> renameGroup()
-            R.id.cab_select_all -> selectAll()
             R.id.cab_delete -> askConfirmDelete()
         }
     }
@@ -63,6 +85,17 @@ class GroupsAdapter(
 
     override fun getItemKeyPosition(key: Int) = groups.indexOfFirst { it.id!!.toInt() == key }
 
+    private fun deselectAll() {
+        val positions = getSelectedItemPositions()
+        positions.forEach { position ->
+            toggleItemSelection(false, position, false)
+        }
+        updateTitle()
+        if (selectedKeys.isEmpty()) {
+            finishActMode()
+        }
+    }
+
     override fun onActionModeCreated() {}
 
     override fun onActionModeDestroyed() {}
@@ -71,11 +104,34 @@ class GroupsAdapter(
         return createViewHolder(ItemGroupBinding.inflate(layoutInflater, parent, false).root)
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val group = groups[position]
-        holder.bindView(group, true, true) { itemView, layoutPosition ->
+        var lastTouchX: Float = -1f
+        
+        // Disable default action mode, we'll show popup menu instead
+        holder.bindView(group, true, false) { itemView, layoutPosition ->
             setupView(itemView, group)
+            
+            // Track touch position for popup menu positioning
+            itemView.setOnTouchListener { view, event ->
+                if (event.action == MotionEvent.ACTION_DOWN ||
+                    event.action == MotionEvent.ACTION_MOVE) {
+                    lastTouchX = event.x
+                    // Store in view tag
+                    view.tag = lastTouchX
+                }
+                false  // Don't consume the event
+            }
         }
+        
+        // Set long click listener AFTER bindView to override the default behavior
+        holder.itemView.setOnLongClickListener { view ->
+            val touchX = (view.tag as? Float) ?: lastTouchX
+            showPopupMenu(holder.itemView, group, touchX)
+            true
+        }
+        
         bindViewHolder(holder)
     }
 
@@ -185,4 +241,95 @@ class GroupsAdapter(
     }
 
     override fun onChange(position: Int) = groups.getOrNull(position)?.getBubbleText() ?: ""
+
+    private fun showPopupMenu(view: View, group: Group, touchX: Float = -1f) {
+        finishActMode()
+        val theme = activity.getPopupMenuTheme()
+        val contextTheme = ContextThemeWrapper(activity, theme)
+        
+        // Determine gravity based on touch position: left side = START, right side = END
+        val gravity = if (touchX >= 0 && touchX < view.width / 2) {
+            Gravity.START
+        } else {
+            Gravity.END
+        }
+
+        PopupMenu(contextTheme, view, gravity).apply {
+            inflate(R.menu.cab_groups)
+            
+            // Prepare menu items visibility
+            menu.apply {
+                findItem(R.id.cab_rename).isVisible = true
+                findItem(R.id.cab_select_all).isVisible = false  // Hide select all in popup menu
+            }
+            
+            setOnMenuItemClickListener { item ->
+                executeItemMenuOperation(group.id!!.toInt()) {
+                    when (item.itemId) {
+                        R.id.cab_rename -> renameGroup()
+                        R.id.cab_delete -> askConfirmDelete()
+                    }
+                }
+                true
+            }
+            show()
+
+            // Adjust X position based on touch location using reflection
+            if (touchX >= 0) {
+                try {
+                    // Access PopupMenu's internal PopupWindow to adjust X position
+                    val popupField = PopupMenu::class.java.getDeclaredField("mPopup")
+                    popupField.isAccessible = true
+                    val menuPopup = popupField.get(this)
+
+                    val popupWindowField = menuPopup.javaClass.getDeclaredField("mPopup")
+                    popupWindowField.isAccessible = true
+                    val popupWindow = popupWindowField.get(menuPopup) as android.widget.PopupWindow
+
+                    // Calculate X offset: center menu on touch point
+                    view.post {
+                        val location = IntArray(2)
+                        view.getLocationOnScreen(location)
+                        val viewX = location[0]
+                        val screenWidth = activity.resources.displayMetrics.widthPixels
+
+                        // Get menu width (approximate or measure)
+                        val menuWidth = (screenWidth * 0.6).toInt()
+                        val offset = activity.resources.getDimensionPixelSize(com.goodwy.commons.R.dimen.smaller_margin)
+
+                        // Calculate desired X position based on touch location
+                        val touchXInt = touchX.toInt()
+                        val isLeftSide = touchXInt < view.width / 2
+                        var menuX: Int = if (isLeftSide) {
+                            // Menu starts at touchX with offset
+                            viewX + touchXInt + offset
+                        } else {
+                            // Menu ends at touchX with offset
+                            viewX + touchXInt - menuWidth - offset
+                        }
+
+                        // Keep within screen bounds
+                        if (menuX < 0) menuX = 0
+                        if (menuX + menuWidth > screenWidth) menuX = screenWidth - menuWidth
+
+                        // Get current Y position
+                        val yLocation = IntArray(2)
+                        view.getLocationOnScreen(yLocation)
+                        val yOffset = yLocation[1] + view.height
+
+                        // Update popup position
+                        popupWindow.update(menuX, yOffset, -1, -1)
+                    }
+                } catch (e: Exception) {
+                    // If reflection fails, use default positioning
+                }
+            }
+        }
+    }
+
+    private fun executeItemMenuOperation(groupId: Int, callback: () -> Unit) {
+        selectedKeys.add(groupId)
+        callback()
+        selectedKeys.remove(groupId)
+    }
 }

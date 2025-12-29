@@ -9,12 +9,15 @@ import android.graphics.drawable.Drawable
 import android.graphics.drawable.Icon
 import android.graphics.drawable.LayerDrawable
 import android.util.TypedValue
+import android.view.Gravity
 import android.view.Menu
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.ContextThemeWrapper
 import android.widget.FrameLayout
 import android.widget.ImageView
+import android.widget.PopupMenu
 import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -144,20 +147,28 @@ class ContactsAdapter(
     override fun getActionMenuId() = R.menu.cab
 
     override fun prepareActionMode(menu: Menu) {
+        val allSelected = selectedKeys.size == getSelectableItemCount() && getSelectableItemCount() > 0
+        val noneSelected = selectedKeys.isEmpty()
+        
         menu.apply {
             findItem(R.id.cab_edit).isVisible = isOneItemSelected()
             findItem(R.id.cab_remove).isVisible = location == LOCATION_FAVORITES_TAB || location == LOCATION_GROUP_CONTACTS
-            findItem(R.id.cab_add_to_favorites).isVisible = (location == LOCATION_CONTACTS_TAB || location == LOCATION_GROUP_CONTACTS) && getSelectedItems().all {it.starred != 1}
-            findItem(R.id.cab_add_to_group).isVisible = location == LOCATION_CONTACTS_TAB || location == LOCATION_FAVORITES_TAB
+            findItem(R.id.cab_add_to_favorites).isVisible = (location == LOCATION_CONTACTS_TAB || location == LOCATION_GROUP_CONTACTS) && getSelectedItems().all {it.starred != 1} && !noneSelected
+            findItem(R.id.cab_add_to_group).isVisible = (location == LOCATION_CONTACTS_TAB || location == LOCATION_FAVORITES_TAB) && !noneSelected
             findItem(R.id.cab_call).isVisible = isOneItemSelected()
             findItem(R.id.cab_send_sms_to_contacts).isVisible =
                 location == LOCATION_CONTACTS_TAB || location == LOCATION_FAVORITES_TAB || location == LOCATION_GROUP_CONTACTS
-            findItem(R.id.cab_send_email_to_contacts).isVisible =
-                location == LOCATION_CONTACTS_TAB || location == LOCATION_FAVORITES_TAB || location == LOCATION_GROUP_CONTACTS
+            findItem(R.id.cab_send_email_to_contacts).isVisible = false
+                /*location == LOCATION_CONTACTS_TAB || location == LOCATION_FAVORITES_TAB || location == LOCATION_GROUP_CONTACTS*/
             findItem(R.id.cab_delete).isVisible = location == LOCATION_CONTACTS_TAB || location == LOCATION_GROUP_CONTACTS
             findItem(R.id.cab_create_shortcut).isVisible =
                 isOreoPlus() && isOneItemSelected() && (location == LOCATION_FAVORITES_TAB || location == LOCATION_CONTACTS_TAB)
             
+            // Show/hide select_all and deselect_all based on selection state
+            findItem(R.id.cab_select_all).isVisible = !allSelected && getSelectableItemCount() > 0
+            findItem(R.id.cab_deselect_all).isVisible = !noneSelected
+            findItem(R.id.cab_export).isVisible = !noneSelected
+
             // Show move option only for contacts that are on SIM or phone storage
             val selectedItems = getSelectedItems()
             val canMove = selectedItems.isNotEmpty() && selectedItems.all { contact ->
@@ -175,13 +186,24 @@ class ContactsAdapter(
     }
 
     override fun actionItemPressed(id: Int) {
+        // Allow select_all and deselect_all to work even when no items are selected
+        when (id) {
+            R.id.cab_select_all -> {
+                selectAll()
+                return
+            }
+            R.id.cab_deselect_all -> {
+                deselectAll()
+                return
+            }
+        }
+
         if (selectedKeys.isEmpty()) {
             return
         }
 
         when (id) {
             R.id.cab_edit -> editContact()
-            R.id.cab_select_all -> selectAll()
             R.id.cab_add_to_favorites -> addToFavorites()
             R.id.cab_add_to_group -> addToGroup()
             R.id.cab_share -> shareContacts()
@@ -203,6 +225,17 @@ class ContactsAdapter(
     override fun getItemSelectionKey(position: Int) = contactItems.getOrNull(position)?.id
 
     override fun getItemKeyPosition(key: Int) = contactItems.indexOfFirst { it.id == key }
+
+    private fun deselectAll() {
+        val positions = getSelectedItemPositions()
+        positions.forEach { position ->
+            toggleItemSelection(false, position, false)
+        }
+        updateTitle()
+        if (selectedKeys.isEmpty()) {
+            finishActMode()
+        }
+    }
 
     override fun onActionModeCreated() {
         notifyDataSetChanged()
@@ -242,12 +275,39 @@ class ContactsAdapter(
         return viewType
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val contact = contactItems[position]
         val allowLongClick = location != LOCATION_INSERT_OR_EDIT
-        holder.bindView(contact, true, allowLongClick) { itemView, layoutPosition ->
+        var lastTouchX: Float = -1f
+        
+        // Disable default action mode, we'll show popup menu instead
+        holder.bindView(contact, true, false) { itemView, layoutPosition ->
             setupView(itemView, contact, holder)
+            
+            // Track touch position for popup menu positioning
+            if (allowLongClick) {
+                itemView.setOnTouchListener { view, event ->
+                    if (event.action == MotionEvent.ACTION_DOWN ||
+                        event.action == MotionEvent.ACTION_MOVE) {
+                        lastTouchX = event.x
+                        // Store in view tag
+                        view.tag = lastTouchX
+                    }
+                    false  // Don't consume the event
+                }
+            }
         }
+        
+        // Set long click listener AFTER bindView to override the default behavior
+        if (allowLongClick) {
+            holder.itemView.setOnLongClickListener { view ->
+                val touchX = (view.tag as? Float) ?: lastTouchX
+                showPopupMenu(holder.itemView, contact, touchX)
+                true
+            }
+        }
+        
         bindViewHolder(holder)
     }
 
@@ -923,5 +983,127 @@ class ContactsAdapter(
                 initiateCall(contact) { launchCallIntent(it, key = BuildConfig.RIGHT_APP_KEY) }
             }
         }
+    }
+
+    private fun showPopupMenu(view: View, contact: Contact, touchX: Float = -1f) {
+        finishActMode()
+        val theme = activity.getPopupMenuTheme()
+        val contextTheme = ContextThemeWrapper(activity, theme)
+        
+        // Determine gravity based on touch position: left side = START, right side = END
+        val gravity = if (touchX >= 0 && touchX < view.width / 2) {
+            Gravity.START
+        } else {
+            Gravity.END
+        }
+
+        PopupMenu(contextTheme, view, gravity).apply {
+            inflate(R.menu.cab)
+            
+            // Prepare menu items visibility based on contact and location
+            menu.apply {
+                findItem(R.id.cab_edit).isVisible = true
+                findItem(R.id.cab_remove).isVisible = location == LOCATION_FAVORITES_TAB || location == LOCATION_GROUP_CONTACTS
+                findItem(R.id.cab_add_to_favorites).isVisible = (location == LOCATION_CONTACTS_TAB || location == LOCATION_GROUP_CONTACTS) && contact.starred != 1
+                findItem(R.id.cab_add_to_group).isVisible = location == LOCATION_CONTACTS_TAB || location == LOCATION_FAVORITES_TAB
+                findItem(R.id.cab_call).isVisible = contact.phoneNumbers.isNotEmpty()
+                findItem(R.id.cab_send_sms_to_contacts).isVisible = 
+                    (location == LOCATION_CONTACTS_TAB || location == LOCATION_FAVORITES_TAB || location == LOCATION_GROUP_CONTACTS) && contact.phoneNumbers.isNotEmpty()
+                findItem(R.id.cab_send_email_to_contacts).isVisible = 
+                    (location == LOCATION_CONTACTS_TAB || location == LOCATION_FAVORITES_TAB || location == LOCATION_GROUP_CONTACTS) && contact.emails.isNotEmpty()
+                findItem(R.id.cab_delete).isVisible = location == LOCATION_CONTACTS_TAB || location == LOCATION_GROUP_CONTACTS
+                findItem(R.id.cab_create_shortcut).isVisible = 
+                    isOreoPlus() && (location == LOCATION_FAVORITES_TAB || location == LOCATION_CONTACTS_TAB)
+                findItem(R.id.cab_select_all).isVisible = false  // Hide select all in popup menu
+                
+                // Show move option only for contacts that are on SIM or phone storage
+                val sourceType = ContactsHelper(activity).getContactSourceType(contact.source)
+                val isSimOrPhone = sourceType.contains(".sim") || sourceType.contains("icc") || 
+                    (contact.source.isEmpty() && sourceType.isEmpty())
+                findItem(R.id.cab_move).isVisible = isSimOrPhone && (location == LOCATION_CONTACTS_TAB || location == LOCATION_FAVORITES_TAB || location == LOCATION_GROUP_CONTACTS)
+
+                if (location == LOCATION_GROUP_CONTACTS) {
+                    findItem(R.id.cab_remove).title = activity.getString(R.string.remove_from_group)
+                }
+            }
+            
+            setOnMenuItemClickListener { item ->
+                executeItemMenuOperation(contact.id) {
+                    when (item.itemId) {
+                        R.id.cab_edit -> editContact()
+                        R.id.cab_remove -> removeContacts()
+                        R.id.cab_add_to_favorites -> addToFavorites()
+                        R.id.cab_add_to_group -> addToGroup()
+                        R.id.cab_share -> shareContacts()
+                        R.id.cab_call -> callContact()
+                        R.id.cab_send_sms_to_contacts -> sendSMSToContacts()
+                        R.id.cab_send_email_to_contacts -> sendEmailToContacts()
+                        R.id.cab_create_shortcut -> createShortcut()
+                        R.id.cab_delete -> askConfirmDelete()
+                        R.id.cab_move -> moveContacts()
+                        R.id.cab_export -> exportContactsToVcf()
+                    }
+                }
+                true
+            }
+            show()
+
+            // Adjust X position based on touch location using reflection
+            if (touchX >= 0) {
+                try {
+                    // Access PopupMenu's internal PopupWindow to adjust X position
+                    val popupField = PopupMenu::class.java.getDeclaredField("mPopup")
+                    popupField.isAccessible = true
+                    val menuPopup = popupField.get(this)
+
+                    val popupWindowField = menuPopup.javaClass.getDeclaredField("mPopup")
+                    popupWindowField.isAccessible = true
+                    val popupWindow = popupWindowField.get(menuPopup) as android.widget.PopupWindow
+
+                    // Calculate X offset: center menu on touch point
+                    view.post {
+                        val location = IntArray(2)
+                        view.getLocationOnScreen(location)
+                        val viewX = location[0]
+                        val screenWidth = activity.resources.displayMetrics.widthPixels
+
+                        // Get menu width (approximate or measure)
+                        val menuWidth = (screenWidth * 0.6).toInt()
+                        val offset = activity.resources.getDimensionPixelSize(com.goodwy.commons.R.dimen.smaller_margin)
+
+                        // Calculate desired X position based on touch location
+                        val touchXInt = touchX.toInt()
+                        val isLeftSide = touchXInt < view.width / 2
+                        var menuX: Int = if (isLeftSide) {
+                            // Menu starts at touchX with offset
+                            viewX + touchXInt + offset
+                        } else {
+                            // Menu ends at touchX with offset
+                            viewX + touchXInt - menuWidth - offset
+                        }
+
+                        // Keep within screen bounds
+                        if (menuX < 0) menuX = 0
+                        if (menuX + menuWidth > screenWidth) menuX = screenWidth - menuWidth
+
+                        // Get current Y position
+                        val yLocation = IntArray(2)
+                        view.getLocationOnScreen(yLocation)
+                        val yOffset = yLocation[1] + view.height
+
+                        // Update popup position
+                        popupWindow.update(menuX, yOffset, -1, -1)
+                    }
+                } catch (e: Exception) {
+                    // If reflection fails, use default positioning
+                }
+            }
+        }
+    }
+
+    private fun executeItemMenuOperation(contactId: Int, callback: () -> Unit) {
+        selectedKeys.add(contactId)
+        callback()
+        selectedKeys.remove(contactId)
     }
 }

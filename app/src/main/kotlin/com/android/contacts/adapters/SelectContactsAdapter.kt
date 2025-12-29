@@ -172,11 +172,14 @@ class SelectContactsAdapter(
                         else -> contact.firstName
                     }
 
+                    // Use avatarName if available, otherwise fallback to fullName
+                    val nameForIcon = if (avatarName.isNotEmpty()) avatarName else fullName
+
                     val placeholderImage =
                         if (contact.isABusinessContact()) {
-                            SimpleContactsHelper(activity).getColoredCompanyIcon(fullName)
+                            SimpleContactsHelper(activity).getColoredCompanyIcon(nameForIcon)
                         } else {
-                            SimpleContactsHelper(root.context).getContactLetterIcon(avatarName).toDrawable(root.resources)
+                            SimpleContactsHelper(root.context).getContactLetterIcon(nameForIcon).toDrawable(root.resources)
                         }
 
                     if (contact.photoUri.isEmpty() && contact.photo == null) {
