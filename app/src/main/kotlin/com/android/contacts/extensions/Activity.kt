@@ -209,7 +209,7 @@ fun Activity.startSelectContactsActivity(
         putExtra(SelectContactsActivity.EXTRA_ALLOW_SELECT_MULTIPLE, allowSelectMultiple)
         putExtra(SelectContactsActivity.EXTRA_SHOW_ONLY_CONTACTS_WITH_NUMBER, showOnlyContactsWithNumber)
         if (selectedContacts != null) {
-            putExtra(SelectContactsActivity.EXTRA_SELECTED_CONTACTS, selectedContacts)
+            putExtra(SelectContactsActivity.EXTRA_SELECTED_CONTACT_IDS, selectedContacts.map { it.id.toLong() }.toLongArray())
         }
         if (requestCode != null) {
             startActivityForResult(this, requestCode)
@@ -219,9 +219,26 @@ fun Activity.startSelectContactsActivity(
     }
 }
 
-fun Intent.getSelectedContactsResult(): Pair<ArrayList<Contact>, ArrayList<Contact>> {
-    val addedContacts = getSerializableExtra(SelectContactsActivity.RESULT_ADDED_CONTACTS) as? ArrayList<Contact> ?: ArrayList()
-    val removedContacts = getSerializableExtra(SelectContactsActivity.RESULT_REMOVED_CONTACTS) as? ArrayList<Contact> ?: ArrayList()
+fun Intent.getSelectedContactsResult(context: android.content.Context): Pair<ArrayList<Contact>, ArrayList<Contact>> {
+    val addedContactIds = getLongArrayExtra(SelectContactsActivity.RESULT_ADDED_CONTACT_IDS)?.toList() ?: emptyList()
+    val removedContactIds = getLongArrayExtra(SelectContactsActivity.RESULT_REMOVED_CONTACT_IDS)?.toList() ?: emptyList()
+    
+    val addedContacts = ArrayList<Contact>()
+    val removedContacts = ArrayList<Contact>()
+    
+    // Reconstruct contacts from IDs synchronously
+    val contactsHelper = ContactsHelper(context)
+    addedContactIds.forEach { id ->
+        contactsHelper.getContactWithId(id.toInt())?.let { contact ->
+            addedContacts.add(contact)
+        }
+    }
+    removedContactIds.forEach { id ->
+        contactsHelper.getContactWithId(id.toInt())?.let { contact ->
+            removedContacts.add(contact)
+        }
+    }
+    
     return Pair(addedContacts, removedContacts)
 }
 

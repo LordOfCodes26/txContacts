@@ -112,7 +112,7 @@ class GroupContactsActivity : SimpleActivity(), RemoveFromGroupListener, Refresh
                 }
             }
         } else if (requestCode == REQUEST_CODE_SELECT_CONTACTS_FOR_GROUP && resultCode == Activity.RESULT_OK && resultData != null) {
-            val (addedContacts, removedContacts) = resultData.getSelectedContactsResult()
+            val (addedContacts, removedContacts) = resultData.getSelectedContactsResult(this)
             ensureBackgroundThread {
                 addContactsToGroup(addedContacts, group.id!!)
                 removeContactsFromGroup(removedContacts, group.id!!)

@@ -10,6 +10,7 @@ import android.view.inputmethod.EditorInfo
 import com.reddit.indicatorfastscroll.FastScrollItemIndicator
 import com.goodwy.commons.extensions.*
 import com.goodwy.commons.helpers.ContactsHelper
+import com.goodwy.commons.helpers.NavigationIcon
 import com.goodwy.commons.helpers.ensureBackgroundThread
 import com.goodwy.commons.models.contacts.Contact
 import com.goodwy.commons.views.MySearchMenu
@@ -33,13 +34,14 @@ class SelectContactsActivity : SimpleActivity() {
     private var allowSelectMultiple = true
     private var showOnlyContactsWithNumber = false
     private var contactClickCallback: ((Contact) -> Unit)? = null
+    private var selectedContactIds = emptyList<Long>()
 
     companion object {
         const val EXTRA_ALLOW_SELECT_MULTIPLE = "allow_select_multiple"
         const val EXTRA_SHOW_ONLY_CONTACTS_WITH_NUMBER = "show_only_contacts_with_number"
-        const val EXTRA_SELECTED_CONTACTS = "selected_contacts"
-        const val RESULT_ADDED_CONTACTS = "added_contacts"
-        const val RESULT_REMOVED_CONTACTS = "removed_contacts"
+        const val EXTRA_SELECTED_CONTACT_IDS = "selected_contact_ids"
+        const val RESULT_ADDED_CONTACT_IDS = "added_contact_ids"
+        const val RESULT_REMOVED_CONTACT_IDS = "removed_contact_ids"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,7 +52,7 @@ class SelectContactsActivity : SimpleActivity() {
 
         allowSelectMultiple = intent.getBooleanExtra(EXTRA_ALLOW_SELECT_MULTIPLE, true)
         showOnlyContactsWithNumber = intent.getBooleanExtra(EXTRA_SHOW_ONLY_CONTACTS_WITH_NUMBER, false)
-        initiallySelectedContacts = intent.getSerializableExtra(EXTRA_SELECTED_CONTACTS) as? ArrayList<Contact> ?: ArrayList()
+        selectedContactIds = intent.getLongArrayExtra(EXTRA_SELECTED_CONTACT_IDS)?.toList() ?: emptyList()
 
         val useSurfaceColor = isDynamicTheme() && !isSystemInDarkMode()
         val backgroundColor = if (useSurfaceColor) getSurfaceColor() else getProperBackgroundColor()
@@ -59,22 +61,23 @@ class SelectContactsActivity : SimpleActivity() {
         setupOptionsMenu()
         binding.selectContactsMenu.apply {
             updateTitle(getString(R.string.select_contact))
-            searchBeVisibleIf(true)
-            toggleForceArrowBackIcon(true)
-            onNavigateBackClickListener = {
-                onBackPressedDispatcher.onBackPressed()
-            }
+            searchBeVisibleIf(false)
         }
+    }
 
-        selectedContacts.addAll(initiallySelectedContacts)
+    override fun onResume() {
+        super.onResume()
+        val useSurfaceColor = isDynamicTheme() && !isSystemInDarkMode()
+        val backgroundColor = if (useSurfaceColor) getSurfaceColor() else getProperBackgroundColor()
+        setupTopAppBar(binding.selectContactsMenu, NavigationIcon.Arrow, topBarColor = backgroundColor)
 
         // if selecting multiple contacts is disabled, react on first contact click and finish the activity
         contactClickCallback = if (allowSelectMultiple) {
             null
         } else { contact ->
             val resultIntent = Intent().apply {
-                putExtra(RESULT_ADDED_CONTACTS, arrayListOf(contact))
-                putExtra(RESULT_REMOVED_CONTACTS, ArrayList<Contact>())
+                putExtra(RESULT_ADDED_CONTACT_IDS, longArrayOf(contact.id.toLong()))
+                putExtra(RESULT_REMOVED_CONTACT_IDS, longArrayOf())
             }
             setResult(RESULT_OK, resultIntent)
             finish()
@@ -96,15 +99,25 @@ class SelectContactsActivity : SimpleActivity() {
                     allContacts = allContacts.filter { it.phoneNumbers.isNotEmpty() }.toMutableList() as ArrayList<Contact>
                 }
 
-                if (initiallySelectedContacts.isEmpty()) {
+                // Load initially selected contacts from IDs if provided
+                // Use contacts from allContacts list to ensure same instances are used
+                if (selectedContactIds.isNotEmpty() && initiallySelectedContacts.isEmpty()) {
+                    val selectedIdsSet = selectedContactIds.toSet()
+                    initiallySelectedContacts = allContacts.filter { contact ->
+                        selectedIdsSet.contains(contact.id.toLong())
+                    } as ArrayList<Contact>
+                } else if (initiallySelectedContacts.isEmpty()) {
+                    // If no IDs provided, use starred contacts as default
                     initiallySelectedContacts = allContacts.filter { it.starred == 1 } as ArrayList<Contact>
-                    selectedContacts.clear()
-                    selectedContacts.addAll(initiallySelectedContacts)
                 }
+                
+                selectedContacts.clear()
+                selectedContacts.addAll(initiallySelectedContacts)
 
                 runOnUiThread {
                     setupContactsList()
                     setupFastscroller()
+                    updateMenuItems()
                 }
             }
         }
@@ -130,6 +143,7 @@ class SelectContactsActivity : SimpleActivity() {
             selectContactList.beVisibleIf(allContacts.isNotEmpty())
             selectContactPlaceholder.beVisibleIf(allContacts.isEmpty())
         }
+        updateMenuItems()
     }
 
     private fun setupFastscroller() {
@@ -185,11 +199,19 @@ class SelectContactsActivity : SimpleActivity() {
             requireToolbar().inflateMenu(R.menu.menu_select_contacts)
             requireToolbar().menu.findItem(R.id.done)?.isVisible = allowSelectMultiple
             setupSearch(requireToolbar().menu)
+            updateMenuItems()
             requireToolbar().setOnMenuItemClickListener { menuItem ->
                 when (menuItem.itemId) {
                     R.id.done -> {
-                        Log.d("CHero", "Done")
                         confirmSelection()
+                        true
+                    }
+                    R.id.select_all -> {
+                        selectAll()
+                        true
+                    }
+                    R.id.deselect_all -> {
+                        deselectAll()
                         true
                     }
                     else -> false
@@ -275,6 +297,36 @@ class SelectContactsActivity : SimpleActivity() {
 
     private fun onSelectionChanged(contacts: HashSet<Contact>) {
         // selectedContacts is already updated in the adapter, nothing needs to be done
+        updateMenuItems()
+    }
+    
+    private fun updateMenuItems() {
+        binding.selectContactsMenu.requireToolbar().menu.apply {
+            val allSelected = selectedContacts.size == allContacts.size && allContacts.isNotEmpty()
+            val noneSelected = selectedContacts.isEmpty()
+            
+            findItem(R.id.select_all)?.isVisible = allowSelectMultiple && !allSelected && allContacts.isNotEmpty()
+            findItem(R.id.deselect_all)?.isVisible = allowSelectMultiple && !noneSelected
+        }
+    }
+    
+    private fun selectAll() {
+        if (!allowSelectMultiple) return
+        selectedContacts.clear()
+        selectedContacts.addAll(allContacts)
+        // Update adapter to reflect selection changes
+        currentAdapter?.refreshSelection()
+        onSelectionChanged(selectedContacts)
+        updateMenuItems()
+    }
+    
+    private fun deselectAll() {
+        if (!allowSelectMultiple) return
+        selectedContacts.clear()
+        // Update adapter to reflect selection changes
+        currentAdapter?.refreshSelection()
+        onSelectionChanged(selectedContacts)
+        updateMenuItems()
     }
 
 
@@ -282,15 +334,17 @@ class SelectContactsActivity : SimpleActivity() {
         ensureBackgroundThread {
             val selectedContactsList = ArrayList(selectedContacts)
 
-            val newlySelectedContacts = selectedContactsList.filter { !initiallySelectedContacts.contains(it) } as ArrayList<Contact>
-            val unselectedContacts = initiallySelectedContacts.filter { !selectedContactsList.contains(it) } as ArrayList<Contact>
+            val newlySelectedContacts = selectedContactsList.filter { !initiallySelectedContacts.contains(it) }
+            val unselectedContacts = initiallySelectedContacts.filter { !selectedContactsList.contains(it) }
 
             val resultIntent = Intent().apply {
-                putExtra(RESULT_ADDED_CONTACTS, newlySelectedContacts)
-                putExtra(RESULT_REMOVED_CONTACTS, unselectedContacts)
+                putExtra(RESULT_ADDED_CONTACT_IDS, newlySelectedContacts.map { it.id.toLong() }.toLongArray())
+                putExtra(RESULT_REMOVED_CONTACT_IDS, unselectedContacts.map { it.id.toLong() }.toLongArray())
             }
-            setResult(RESULT_OK, resultIntent)
-            finish()
+            runOnUiThread {
+                setResult(RESULT_OK, resultIntent)
+                finish()
+            }
         }
     }
 }

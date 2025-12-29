@@ -259,7 +259,7 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
                 }
             }
         } else if (requestCode == REQUEST_CODE_SELECT_CONTACTS && resultCode == RESULT_OK && resultData != null) {
-            val (addedContacts, removedContacts) = resultData.getSelectedContactsResult()
+            val (addedContacts, removedContacts) = resultData.getSelectedContactsResult(this)
             ContactsHelper(this).apply {
                 addFavorites(addedContacts)
                 removeFavorites(removedContacts)

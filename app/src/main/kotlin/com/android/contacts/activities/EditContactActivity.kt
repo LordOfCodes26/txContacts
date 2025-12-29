@@ -175,7 +175,7 @@ class EditContactActivity : ContactActivity() {
                 INTENT_CROP_PHOTO -> updateContactPhoto(lastPhotoIntentUri.toString(), binding.topDetails.contactPhoto, binding.contactPhotoBottomShadow)
                 REQUEST_CODE_SELECT_CONTACT_RELATION -> {
                     resultData?.let { data ->
-                        val (addedContacts, _) = data.getSelectedContactsResult()
+                        val (addedContacts, _) = data.getSelectedContactsResult(this)
                         val name = addedContacts.firstOrNull()?.getNameToDisplay()
                         currentRelationTextView?.let { textView ->
                             if (name != null) {

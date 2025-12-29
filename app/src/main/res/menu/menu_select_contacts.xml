@@ -10,6 +10,16 @@
         app:actionViewClass="androidx.appcompat.widget.SearchView"
         app:showAsAction="ifRoom|collapseActionView" />
     <item
+        android:id="@+id/select_all"
+        android:icon="@drawable/ic_select_all_vector"
+        android:title="@string/select_all"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/deselect_all"
+        android:icon="@drawable/ic_select_all_vector"
+        android:title="@string/deselect_all"
+        app:showAsAction="ifRoom" />
+    <item
         android:id="@+id/done"
         android:icon="@drawable/ic_check_vector"
         android:title="@string/ok"

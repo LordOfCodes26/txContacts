@@ -62,15 +62,18 @@ class SelectContactsAdapter(
             }
         }
     }
+    
+    fun refreshSelection() {
+        updateSelectedPositions()
+        notifyDataSetChanged()
+    }
 
     private fun toggleItemSelection(select: Boolean, pos: Int) {
         val contact = contacts.getOrNull(pos) ?: return
 
         if (select) {
-            if (itemViews[pos] != null) {
-                selectedPositions.add(pos)
-                selectedContacts.add(contact)
-            }
+            selectedPositions.add(pos)
+            selectedContacts.add(contact)
         } else {
             selectedPositions.remove(pos)
             selectedContacts.remove(contact)
