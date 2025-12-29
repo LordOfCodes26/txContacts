@@ -50,11 +50,34 @@ class SelectGroupsDialog(val activity: SimpleActivity, val selectedGroups: Array
             .setBlurRadius(8f)
             .setBlurAutoUpdate(true)
 
+        // Setup title inside BlurView
+        val titleTextView = binding.root.findViewById<com.goodwy.commons.views.MyTextView>(com.goodwy.commons.R.id.dialog_title)
+        titleTextView?.apply {
+            visibility = android.view.View.VISIBLE
+            setText(com.goodwy.strings.R.string.add_group)
+        }
+
+        // Setup custom buttons inside BlurView
+        val primaryColor = activity.getProperPrimaryColor()
+        val positiveButton = binding.root.findViewById<com.google.android.material.button.MaterialButton>(com.goodwy.commons.R.id.positive_button)
+        val negativeButton = binding.root.findViewById<com.google.android.material.button.MaterialButton>(com.goodwy.commons.R.id.negative_button)
+        val buttonsContainer = binding.root.findViewById<android.widget.LinearLayout>(com.goodwy.commons.R.id.buttons_container)
+
+        buttonsContainer?.visibility = android.view.View.VISIBLE
+        positiveButton?.apply {
+            visibility = android.view.View.VISIBLE
+            setTextColor(primaryColor)
+            setOnClickListener { dialogConfirmed() }
+        }
+        negativeButton?.apply {
+            visibility = android.view.View.VISIBLE
+            setTextColor(primaryColor)
+            setOnClickListener { dialog?.dismiss() }
+        }
+
         activity.getAlertDialogBuilder()
-            .setPositiveButton(com.goodwy.commons.R.string.ok) { dialog, which -> dialogConfirmed() }
-            .setNegativeButton(com.goodwy.commons.R.string.cancel, null)
             .apply {
-                activity.setupDialogStuff(binding.root, this, com.goodwy.strings.R.string.add_group) { alertDialog ->
+                activity.setupDialogStuff(binding.root, this, titleText = "") { alertDialog ->
                     dialog = alertDialog
                 }
             }
@@ -119,5 +142,6 @@ class SelectGroupsDialog(val activity: SimpleActivity, val selectedGroups: Array
         }
 
         callback(selectedGroups)
+        dialog?.dismiss()
     }
 }

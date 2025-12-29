@@ -2,6 +2,7 @@ package com.android.contacts.dialogs
 
 import androidx.appcompat.app.AlertDialog
 import com.goodwy.commons.extensions.getAlertDialogBuilder
+import com.goodwy.commons.extensions.getProperPrimaryColor
 import com.goodwy.commons.extensions.getPublicContactSource
 import com.goodwy.commons.extensions.setupDialogStuff
 import com.goodwy.commons.extensions.toast
@@ -20,6 +21,7 @@ import eightbitlab.com.blurview.BlurTarget
 import eightbitlab.com.blurview.BlurView
 
 class ImportContactsDialog(val activity: SimpleActivity, val path: String, blurTarget: BlurTarget, private val callback: (refreshView: Boolean) -> Unit) {
+    private var dialog: AlertDialog? = null
     private var targetContactSource = ""
     private var ignoreClicks = false
 
@@ -63,24 +65,51 @@ class ImportContactsDialog(val activity: SimpleActivity, val path: String, blurT
             .setBlurRadius(8f)
             .setBlurAutoUpdate(true)
 
-        activity.getAlertDialogBuilder()
-            .setPositiveButton(com.goodwy.commons.R.string.ok, null)
-            .setNegativeButton(com.goodwy.commons.R.string.cancel, null)
-            .apply {
-                activity.setupDialogStuff(binding.root, this, R.string.import_contacts) { alertDialog ->
-                    alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                        if (ignoreClicks) {
-                            return@setOnClickListener
-                        }
+        // Setup title inside BlurView
+        val titleTextView = binding.root.findViewById<com.goodwy.commons.views.MyTextView>(com.goodwy.commons.R.id.dialog_title)
+        titleTextView?.apply {
+            visibility = android.view.View.VISIBLE
+            setText(R.string.import_contacts)
+        }
 
-                        ignoreClicks = true
-                        activity.toast(com.goodwy.commons.R.string.importing)
-                        ensureBackgroundThread {
-                            val result = VcfImporter(activity).importContacts(path, targetContactSource)
-                            handleParseResult(result)
-                            alertDialog.dismiss()
-                        }
+        // Setup custom buttons inside BlurView
+        val primaryColor = activity.getProperPrimaryColor()
+        val positiveButton = binding.root.findViewById<com.google.android.material.button.MaterialButton>(com.goodwy.commons.R.id.positive_button)
+        val negativeButton = binding.root.findViewById<com.google.android.material.button.MaterialButton>(com.goodwy.commons.R.id.negative_button)
+        val buttonsContainer = binding.root.findViewById<android.widget.LinearLayout>(com.goodwy.commons.R.id.buttons_container)
+
+        buttonsContainer?.visibility = android.view.View.VISIBLE
+        positiveButton?.apply {
+            visibility = android.view.View.VISIBLE
+            setTextColor(primaryColor)
+            setOnClickListener {
+                if (ignoreClicks) {
+                    return@setOnClickListener
+                }
+
+                ignoreClicks = true
+                activity.toast(com.goodwy.commons.R.string.importing)
+                ensureBackgroundThread {
+                    val result = VcfImporter(activity).importContacts(path, targetContactSource)
+                    handleParseResult(result)
+                    activity.runOnUiThread {
+                        dialog?.dismiss()
                     }
+                }
+            }
+        }
+        negativeButton?.apply {
+            visibility = android.view.View.VISIBLE
+            setTextColor(primaryColor)
+            setOnClickListener {
+                // Dialog will be dismissed by setupDialogStuff
+            }
+        }
+
+        activity.getAlertDialogBuilder()
+            .apply {
+                activity.setupDialogStuff(binding.root, this, titleText = "") { alertDialog ->
+                    dialog = alertDialog
                 }
             }
     }

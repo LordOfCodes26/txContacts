@@ -5,15 +5,27 @@
     android:layout_height="match_parent"
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingTop="@dimen/activity_margin">
+        android:orientation="vertical">
+
+        <com.goodwy.commons.views.MyTextView
+            android:id="@+id/dialog_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            style="@style/DialogTitleStyle"
+            android:visibility="gone" />
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingTop="@dimen/activity_margin">
 
         <com.goodwy.commons.views.MyTextInputLayout
             android:id="@+id/export_contacts_folder_hint"
@@ -81,4 +93,29 @@
 
         </LinearLayout>
     </ScrollView>
+
+        <LinearLayout
+            android:id="@+id/buttons_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            style="@style/DialogButtonContainerStyle">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/negative_button"
+                style="@style/Widget.Material3.Button.TextButton.Dialog"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/cancel"
+                android:visibility="gone" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/positive_button"
+                style="@style/Widget.Material3.Button.TextButton.Dialog"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/ok"
+                android:visibility="gone" />
+
+        </LinearLayout>
+    </LinearLayout>
 </eightbitlab.com.blurview.BlurView>

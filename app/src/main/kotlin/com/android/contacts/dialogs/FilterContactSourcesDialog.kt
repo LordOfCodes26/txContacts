@@ -2,6 +2,7 @@ package com.android.contacts.dialogs
 
 import androidx.appcompat.app.AlertDialog
 import com.goodwy.commons.extensions.getAlertDialogBuilder
+import com.goodwy.commons.extensions.getProperPrimaryColor
 import com.goodwy.commons.extensions.getVisibleContactSources
 import com.goodwy.commons.extensions.setupDialogStuff
 import com.goodwy.commons.helpers.ContactsHelper
@@ -71,12 +72,29 @@ class FilterContactSourcesDialog(val activity: SimpleActivity, private val blurT
                     .setFrameClearDrawable(windowBackground)
                     .setBlurRadius(8f)
                     .setBlurAutoUpdate(true)
+
+                // Setup custom buttons inside BlurView
+                val primaryColor = activity.getProperPrimaryColor()
+                val positiveButton = binding.root.findViewById<com.google.android.material.button.MaterialButton>(com.goodwy.commons.R.id.positive_button)
+                val negativeButton = binding.root.findViewById<com.google.android.material.button.MaterialButton>(com.goodwy.commons.R.id.negative_button)
+                val buttonsContainer = binding.root.findViewById<android.widget.LinearLayout>(com.goodwy.commons.R.id.buttons_container)
+
+                buttonsContainer?.visibility = android.view.View.VISIBLE
+                positiveButton?.apply {
+                    visibility = android.view.View.VISIBLE
+                    setTextColor(primaryColor)
+                    setOnClickListener { confirmContactSources() }
+                }
+                negativeButton?.apply {
+                    visibility = android.view.View.VISIBLE
+                    setTextColor(primaryColor)
+                    setOnClickListener { dialog?.dismiss() }
+                }
+
                 activity.getAlertDialogBuilder()
-                    .setPositiveButton(com.goodwy.commons.R.string.ok) { dialogInterface, i -> confirmContactSources() }
-                    .setNegativeButton(com.goodwy.commons.R.string.cancel, null)
                     .apply {
-                        activity.setupDialogStuff(binding.root, this) { alertDialog ->
-                        dialog = alertDialog
+                        activity.setupDialogStuff(binding.root, this, titleText = "") { alertDialog ->
+                            dialog = alertDialog
                         }
                     }
             }

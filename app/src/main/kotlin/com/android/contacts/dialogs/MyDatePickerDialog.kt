@@ -12,6 +12,7 @@ import java.util.Calendar
 
 class MyDatePickerDialog(val activity: BaseSimpleActivity, val defaultDate: String, blurTarget: BlurTarget, val callback: (dateTag: String) -> Unit) {
     private val binding = DialogDatePickerBinding.inflate(activity.layoutInflater)
+    private var dialog: AlertDialog? = null
 
     init {
         // Setup BlurView with the provided BlurTarget
@@ -25,12 +26,28 @@ class MyDatePickerDialog(val activity: BaseSimpleActivity, val defaultDate: Stri
             .setBlurRadius(8f)
             .setBlurAutoUpdate(true)
 
-//        activity.getAlertDialogBuilder()
+        // Setup custom buttons inside BlurView
+        val primaryColor = activity.getProperPrimaryColor()
+        val positiveButton = binding.root.findViewById<com.google.android.material.button.MaterialButton>(com.goodwy.commons.R.id.positive_button)
+        val negativeButton = binding.root.findViewById<com.google.android.material.button.MaterialButton>(com.goodwy.commons.R.id.negative_button)
+        val buttonsContainer = binding.root.findViewById<android.widget.LinearLayout>(com.goodwy.commons.R.id.buttons_container)
+
+        buttonsContainer?.visibility = android.view.View.VISIBLE
+        positiveButton?.apply {
+            visibility = android.view.View.VISIBLE
+            setTextColor(primaryColor)
+            setOnClickListener { dialogConfirmed() }
+        }
+        negativeButton?.apply {
+            visibility = android.view.View.VISIBLE
+            setTextColor(primaryColor)
+            setOnClickListener { dialog?.dismiss() }
+        }
+
         AlertDialog.Builder(activity, activity.getDatePickerDialogTheme())
-            .setPositiveButton(com.goodwy.commons.R.string.ok) { dialog, which -> dialogConfirmed() }
-            .setNegativeButton(com.goodwy.commons.R.string.cancel, null)
             .apply {
-                activity.setupDialogStuff(binding.root, this) { alertDialog ->
+                activity.setupDialogStuff(binding.root, this, titleText = "") { alertDialog ->
+                    dialog = alertDialog
                     val today = Calendar.getInstance()
                     var year = today.get(Calendar.YEAR)
                     var month = today.get(Calendar.MONTH)
@@ -74,5 +91,6 @@ class MyDatePickerDialog(val activity: BaseSimpleActivity, val defaultDate: Stri
         }
 
         callback(tag)
+        dialog?.dismiss()
     }
 }

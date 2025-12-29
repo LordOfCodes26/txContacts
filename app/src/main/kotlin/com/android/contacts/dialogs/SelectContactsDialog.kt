@@ -85,14 +85,29 @@ class SelectContactsDialog(
             .setBlurRadius(8f)
             .setBlurAutoUpdate(true)
 
-        val builder = activity.getAlertDialogBuilder()
-        if (allowSelectMultiple) {
-            builder.setPositiveButton(com.goodwy.commons.R.string.ok) { dialog, which -> dialogConfirmed() }
-        }
-        builder.setNegativeButton(com.goodwy.commons.R.string.cancel, null)
+        // Setup custom buttons inside BlurView
+        val primaryColor = activity.getProperPrimaryColor()
+        val positiveButton = binding.root.findViewById<com.google.android.material.button.MaterialButton>(com.goodwy.commons.R.id.positive_button)
+        val negativeButton = binding.root.findViewById<com.google.android.material.button.MaterialButton>(com.goodwy.commons.R.id.negative_button)
+        val buttonsContainer = binding.root.findViewById<android.widget.LinearLayout>(com.goodwy.commons.R.id.buttons_container)
 
+        if (allowSelectMultiple) {
+            buttonsContainer?.visibility = android.view.View.VISIBLE
+            positiveButton?.apply {
+                visibility = android.view.View.VISIBLE
+                setTextColor(primaryColor)
+                setOnClickListener { dialogConfirmed() }
+            }
+        }
+        negativeButton?.apply {
+            visibility = android.view.View.VISIBLE
+            setTextColor(primaryColor)
+            setOnClickListener { dialog?.dismiss() }
+        }
+
+        val builder = activity.getAlertDialogBuilder()
         builder.apply {
-            activity.setupDialogStuff(binding.root, this) { alertDialog ->
+            activity.setupDialogStuff(binding.root, this, titleText = "") { alertDialog ->
                 dialog = alertDialog
             }
         }

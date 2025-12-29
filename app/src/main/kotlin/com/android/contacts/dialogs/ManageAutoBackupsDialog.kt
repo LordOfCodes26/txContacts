@@ -24,6 +24,7 @@ import eightbitlab.com.blurview.BlurView
 import java.io.File
 
 class ManageAutoBackupsDialog(private val activity: SimpleActivity, blurTarget: BlurTarget, onSuccess: () -> Unit) {
+    private var dialog: AlertDialog? = null
     private val binding = DialogManageAutomaticBackupsBinding.inflate(activity.layoutInflater)
     private val config = activity.config
     private var backupFolder = config.autoBackupFolder
@@ -141,52 +142,76 @@ class ManageAutoBackupsDialog(private val activity: SimpleActivity, blurTarget: 
             .setBlurRadius(8f)
             .setBlurAutoUpdate(true)
 
-        activity.getAlertDialogBuilder()
-            .setPositiveButton(com.goodwy.commons.R.string.ok, null)
-            .setNegativeButton(com.goodwy.commons.R.string.cancel, null)
-            .apply {
-                activity.setupDialogStuff(binding.root, this, com.goodwy.commons.R.string.manage_automatic_backups) { dialog ->
-                    dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                        if (binding.backupContactSourcesList.adapter == null) {
+        // Setup title inside BlurView
+        val titleTextView = binding.root.findViewById<com.goodwy.commons.views.MyTextView>(com.goodwy.commons.R.id.dialog_title)
+        titleTextView?.apply {
+            visibility = android.view.View.VISIBLE
+            setText(com.goodwy.commons.R.string.manage_automatic_backups)
+        }
+
+        // Setup custom buttons inside BlurView
+        val primaryColor = activity.getProperPrimaryColor()
+        val positiveButton = binding.root.findViewById<com.google.android.material.button.MaterialButton>(com.goodwy.commons.R.id.positive_button)
+        val negativeButton = binding.root.findViewById<com.google.android.material.button.MaterialButton>(com.goodwy.commons.R.id.negative_button)
+        val buttonsContainer = binding.root.findViewById<android.widget.LinearLayout>(com.goodwy.commons.R.id.buttons_container)
+
+        buttonsContainer?.visibility = android.view.View.VISIBLE
+        positiveButton?.apply {
+            visibility = android.view.View.VISIBLE
+            setTextColor(primaryColor)
+            setOnClickListener {
+                if (binding.backupContactSourcesList.adapter == null) {
+                    return@setOnClickListener
+                }
+                val filename = binding.backupContactsFilename.value
+                when {
+                    filename.isEmpty() -> activity.toast(com.goodwy.commons.R.string.empty_name)
+                    filename.isAValidFilename() -> {
+                        val file = File(backupFolder, "$filename.vcf")
+                        if (file.exists() && !file.canWrite()) {
+                            activity.toast(com.goodwy.commons.R.string.name_taken)
                             return@setOnClickListener
                         }
-                        val filename = binding.backupContactsFilename.value
-                        when {
-                            filename.isEmpty() -> activity.toast(com.goodwy.commons.R.string.empty_name)
-                            filename.isAValidFilename() -> {
-                                val file = File(backupFolder, "$filename.vcf")
-                                if (file.exists() && !file.canWrite()) {
-                                    activity.toast(com.goodwy.commons.R.string.name_taken)
-                                    return@setOnClickListener
-                                }
 
-                                val selectedSources = (binding.backupContactSourcesList.adapter as FilterContactSourcesAdapter).getSelectedContactSources()
-                                if (selectedSources.isEmpty()) {
-                                    activity.toast(com.goodwy.commons.R.string.no_entries_for_exporting)
-                                    return@setOnClickListener
-                                }
+                        val selectedSources = (binding.backupContactSourcesList.adapter as FilterContactSourcesAdapter).getSelectedContactSources()
+                        if (selectedSources.isEmpty()) {
+                            activity.toast(com.goodwy.commons.R.string.no_entries_for_exporting)
+                            return@setOnClickListener
+                        }
 
-                                config.autoBackupContactSources = selectedSources.map { it.name }.toSet()
-                                config.autoBackupTime = time
-                                config.autoBackupInterval = interval
+                        config.autoBackupContactSources = selectedSources.map { it.name }.toSet()
+                        config.autoBackupTime = time
+                        config.autoBackupInterval = interval
 
-                                ensureBackgroundThread {
-                                    config.apply {
-                                        autoBackupFolder = backupFolder
-                                        autoBackupFilename = filename
-                                    }
-
-                                    activity.runOnUiThread {
-                                        onSuccess()
-                                    }
-
-                                    dialog.dismiss()
-                                }
+                        ensureBackgroundThread {
+                            config.apply {
+                                autoBackupFolder = backupFolder
+                                autoBackupFilename = filename
                             }
 
-                            else -> activity.toast(com.goodwy.commons.R.string.invalid_name)
+                            activity.runOnUiThread {
+                                onSuccess()
+                                dialog?.dismiss()
+                            }
                         }
                     }
+
+                    else -> activity.toast(com.goodwy.commons.R.string.invalid_name)
+                }
+            }
+        }
+        negativeButton?.apply {
+            visibility = android.view.View.VISIBLE
+            setTextColor(primaryColor)
+            setOnClickListener {
+                // Dialog will be dismissed by setupDialogStuff
+            }
+        }
+
+        activity.getAlertDialogBuilder()
+            .apply {
+                activity.setupDialogStuff(binding.root, this, titleText = "") { alertDialog ->
+                    dialog = alertDialog
                 }
             }
     }

@@ -2,6 +2,7 @@ package com.android.contacts.dialogs
 
 import com.goodwy.commons.activities.BaseSimpleActivity
 import com.goodwy.commons.extensions.getAlertDialogBuilder
+import com.goodwy.commons.extensions.getProperPrimaryColor
 import com.goodwy.commons.extensions.setupDialogStuff
 import com.goodwy.commons.helpers.TAB_CONTACTS
 import com.goodwy.commons.helpers.TAB_FAVORITES
@@ -15,6 +16,7 @@ import eightbitlab.com.blurview.BlurTarget
 import eightbitlab.com.blurview.BlurView
 
 class ManageVisibleTabsDialog(val activity: BaseSimpleActivity, blurTarget: BlurTarget) {
+    private var dialog: androidx.appcompat.app.AlertDialog? = null
     private var view = activity.layoutInflater.inflate(R.layout.dialog_manage_visible_tabs, null)
     private val tabs = LinkedHashMap<Int, Int>()
 
@@ -41,11 +43,36 @@ class ManageVisibleTabsDialog(val activity: BaseSimpleActivity, blurTarget: Blur
             .setBlurRadius(8f)
             .setBlurAutoUpdate(true)
 
+        // Setup title inside BlurView
+        val titleTextView = view.findViewById<com.goodwy.commons.views.MyTextView>(com.goodwy.commons.R.id.dialog_title)
+        titleTextView?.apply {
+            visibility = android.view.View.VISIBLE
+            setText(com.goodwy.commons.R.string.manage_shown_tabs)
+        }
+
+        // Setup custom buttons inside BlurView
+        val primaryColor = activity.getProperPrimaryColor()
+        val positiveButton = view.findViewById<com.google.android.material.button.MaterialButton>(com.goodwy.commons.R.id.positive_button)
+        val negativeButton = view.findViewById<com.google.android.material.button.MaterialButton>(com.goodwy.commons.R.id.negative_button)
+        val buttonsContainer = view.findViewById<android.widget.LinearLayout>(com.goodwy.commons.R.id.buttons_container)
+
+        buttonsContainer?.visibility = android.view.View.VISIBLE
+        positiveButton?.apply {
+            visibility = android.view.View.VISIBLE
+            setTextColor(primaryColor)
+            setOnClickListener { dialogConfirmed() }
+        }
+        negativeButton?.apply {
+            visibility = android.view.View.VISIBLE
+            setTextColor(primaryColor)
+            setOnClickListener { dialog?.dismiss() }
+        }
+
         activity.getAlertDialogBuilder()
-            .setPositiveButton(com.goodwy.commons.R.string.ok) { dialog, which -> dialogConfirmed() }
-            .setNegativeButton(com.goodwy.commons.R.string.cancel, null)
             .apply {
-                activity.setupDialogStuff(view, this, com.goodwy.commons.R.string.manage_shown_tabs)
+                activity.setupDialogStuff(view, this, titleText = "") { alertDialog ->
+                    dialog = alertDialog
+                }
             }
     }
 
@@ -62,5 +89,6 @@ class ManageVisibleTabsDialog(val activity: BaseSimpleActivity, blurTarget: Blur
         }
 
         activity.config.showTabs = result
+        dialog?.dismiss()
     }
 }
