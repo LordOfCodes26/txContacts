@@ -872,7 +872,8 @@
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/card_websites"
                     style="@style/ContactFieldCardView"
-                    android:layout_below="@+id/card_ringtone">
+                    android:layout_below="@+id/card_ringtone"
+                    android:visibility="gone">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -960,7 +961,8 @@
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/card_relations"
                     style="@style/ContactFieldCardView"
-                    android:layout_below="@+id/card_websites">
+                    android:layout_below="@+id/card_websites"
+                    android:visibility="gone">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -1217,7 +1219,8 @@
                     android:layout_marginTop="16dp"
                     android:layout_marginEnd="16dp"
                     android:layout_marginBottom="16dp"
-                    android:background="@color/activated_item_foreground">
+                    android:background="@color/activated_item_foreground"
+                    android:visibility="gone">
 
                     <TextView
                         android:id="@+id/contact_add_fields"

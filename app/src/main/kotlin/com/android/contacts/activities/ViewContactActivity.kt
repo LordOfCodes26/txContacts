@@ -190,25 +190,8 @@ class ViewContactActivity : ContactActivity() {
                 true
             }
 
-            findItem(R.id.open_with).setOnMenuItemClickListener {
-                openWith()
-                true
-            }
-
             findItem(R.id.delete).setOnMenuItemClickListener {
                 deleteContactWithMergeLogic()
-                true
-            }
-
-            findItem(R.id.manage_visible_fields).setOnMenuItemClickListener {
-                val blurTarget = findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
-                    ?: throw IllegalStateException("mainBlurTarget not found")
-                ManageVisibleFieldsDialog(this@ViewContactActivity, blurTarget) {
-                    showFields = config.showContactFields
-                    ensureBackgroundThread {
-                        initContact()
-                    }
-                }
                 true
             }
         }
@@ -315,7 +298,7 @@ class ViewContactActivity : ContactActivity() {
         }
 
         updateTextColors(binding.contactScrollview)
-        binding.contactToolbar.menu.findItem(R.id.open_with).isVisible = contact?.isPrivate() == false
+        binding.contactToolbar.menu.findItem(R.id.open_with).isVisible = /*contact?.isPrivate() == false*/false
     }
 
     private fun setupViewContact() {

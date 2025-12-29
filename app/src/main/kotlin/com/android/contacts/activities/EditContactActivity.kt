@@ -61,6 +61,9 @@ import com.android.contacts.extensions.showContactSourcePicker
 import com.android.contacts.helpers.*
 import com.mikhaellopez.rxanimation.RxAnimation
 import com.mikhaellopez.rxanimation.shake
+import org.joda.time.DateTime
+import org.joda.time.Years
+import org.joda.time.format.DateTimeFormat
 import java.util.LinkedList
 import java.util.Locale
 
@@ -322,7 +325,7 @@ class EditContactActivity : ContactActivity() {
         binding.contactToolbar.menu.apply {
             findItem(R.id.delete).isVisible = contact?.id != 0
             findItem(R.id.share).isVisible = contact?.id != 0
-            findItem(R.id.open_with).isVisible = contact?.id != 0 && contact?.isPrivate() == false
+            findItem(R.id.open_with).isVisible = /*contact?.id != 0 && contact?.isPrivate() == false*/ false
 
             val contrastColor = getProperBackgroundColor().getContrastColor()
             val iconColor = if (baseConfig.topAppBarColorIcon) properPrimaryColor else contrastColor
@@ -422,22 +425,8 @@ class EditContactActivity : ContactActivity() {
                 true
             }
 
-            findItem(R.id.open_with).setOnMenuItemClickListener {
-                openWith()
-                true
-            }
-
             findItem(R.id.delete).setOnMenuItemClickListener {
                 deleteContact()
-                true
-            }
-
-            findItem(R.id.manage_visible_fields).setOnMenuItemClickListener {
-                val blurTarget = findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
-                    ?: throw IllegalStateException("mainBlurTarget not found")
-                ManageVisibleFieldsDialog(this@EditContactActivity, blurTarget) {
-                    initContact()
-                }
                 true
             }
         }
@@ -563,14 +552,20 @@ class EditContactActivity : ContactActivity() {
         binding.contactEventsAddNewHolder.beVisibleIf(areEventsVisible)
 
         val areWebsitesVisible = showFields and SHOW_WEBSITES_FIELD != 0
-        binding.contactWebsitesTitleHolder.beVisibleIf(areWebsitesVisible)
-        binding.contactWebsitesHolder.beVisibleIf(areWebsitesVisible)
-        binding.contactWebsitesAddNewHolder.beVisibleIf(areWebsitesVisible)
+//        binding.contactWebsitesTitleHolder.beVisibleIf(areWebsitesVisible)
+//        binding.contactWebsitesHolder.beVisibleIf(areWebsitesVisible)
+//        binding.contactWebsitesAddNewHolder.beVisibleIf(areWebsitesVisible)
+        binding.contactWebsitesTitleHolder.beGone()
+        binding.contactWebsitesHolder.beGone()
+        binding.contactWebsitesAddNewHolder.beGone()
 
         val areRelationsVisible = showFields and SHOW_RELATIONS_FIELD != 0
-        binding.contactRelationsTitleHolder.beVisibleIf(areRelationsVisible)
-        binding.contactRelationsHolder.beVisibleIf(areRelationsVisible)
-        binding.contactRelationsAddNewHolder.beVisibleIf(areRelationsVisible)
+//        binding.contactRelationsTitleHolder.beVisibleIf(areRelationsVisible)
+//        binding.contactRelationsHolder.beVisibleIf(areRelationsVisible)
+//        binding.contactRelationsAddNewHolder.beVisibleIf(areRelationsVisible)
+        binding.contactRelationsTitleHolder.beGone()
+        binding.contactRelationsHolder.beGone()
+        binding.contactRelationsAddNewHolder.beGone()
 
         val areGroupsVisible = showFields and SHOW_GROUPS_FIELD != 0
         binding.contactGroupsTitleHolder.beVisibleIf(areGroupsVisible)
@@ -871,7 +866,7 @@ class EditContactActivity : ContactActivity() {
 
             eventHolder.apply {
                 val contactEvent = contactEvent.apply {
-                    event.value.getDateTimeFromDateString(true, this)
+                    formatDateWithCustomFormat(event.value, true, this)
                     tag = event.value
                     alpha = 1f
                 }
@@ -1259,7 +1254,7 @@ class EditContactActivity : ContactActivity() {
                 ?: throw IllegalStateException("mainBlurTarget not found")
             MyDatePickerDialog(this, eventField.tag?.toString() ?: "", blurTarget) { dateTag ->
                 eventField.apply {
-                    dateTag.getDateTimeFromDateString(true, this)
+                    formatDateWithCustomFormat(dateTag, true, this)
                     tag = dateTag
                     alpha = 1f
                 }
@@ -2262,5 +2257,89 @@ class EditContactActivity : ContactActivity() {
                 }
             }
         }
+    }
+
+    /**
+     * Formats a date string using the "yyyy.MM.dd" format and updates the TextView.
+     * This is a custom implementation to ensure dates are always displayed in yyyy.MM.dd format.
+     */
+    private fun formatDateWithCustomFormat(dateString: String, showYearsSince: Boolean, viewToUpdate: TextView?) {
+        if (dateString.isEmpty()) {
+            viewToUpdate?.text = getString(com.goodwy.commons.R.string.unknown)
+            return
+        }
+
+        // Build list of formats to try, starting with user's configured format
+        val dateFormats = mutableListOf<String>()
+        
+        // First, try user's configured date format
+        val userDateFormat = baseConfig.dateFormat
+        if (userDateFormat.isNotEmpty()) {
+            dateFormats.add(userDateFormat)
+            
+            // Also try without year if format includes year
+            if (userDateFormat.contains("y")) {
+                val formatWithoutYear = userDateFormat
+                    .replace("yyyy", "")
+                    .replace("yy", "")
+                    .replace("y", "")
+                    .replace("  ", " ")
+                    .trim()
+                    .trimStart('-', '.', '/', ' ')
+                    .trimEnd('-', '.', '/', ' ')
+                    .replace(Regex("[-./]{2,}"), "-")
+                if (formatWithoutYear.isNotEmpty()) {
+                    dateFormats.add(formatWithoutYear)
+                }
+            }
+        }
+        
+        // Add standard date formats
+        dateFormats.addAll(getDateFormats())
+        
+        // Add additional common formats
+        dateFormats.addAll(listOf(
+            "dd.MM.yyyy", "dd/MM/yyyy", "MM/dd/yyyy",
+            "MM-dd-yyyy", "dd-MM-yyyy", "dd.MM.yy",
+            "dd/MM/yy", "MM/dd/yy", "dd-MM", "dd.MM"
+        ))
+        
+        var date: DateTime? = null
+        var hasYear = true
+        
+        // Try to parse the date string with each format
+        for (format in dateFormats) {
+            try {
+                val parsedDate = DateTime.parse(dateString, DateTimeFormat.forPattern(format))
+                date = parsedDate
+                hasYear = format.contains("y")
+                
+                // If format doesn't have year, set to current year
+                if (!hasYear) {
+                    date = date.withYear(DateTime().year)
+                    hasYear = true // We now have a year
+                }
+                break
+            } catch (_: Exception) {
+                // Try next format
+            }
+        }
+        
+        // If we couldn't parse the date, show unknown
+        if (date == null) {
+            viewToUpdate?.text = getString(com.goodwy.commons.R.string.unknown)
+            return
+        }
+        
+        // Format using fixed format yyyy.MM.dd
+        val customFormat = "yyyy.MM.dd"
+        val formatter = DateTimeFormat.forPattern(customFormat)
+        var formattedString = formatter.print(date)
+        
+        if (showYearsSince && hasYear) {
+            formattedString += " (${Years.yearsBetween(date, DateTime.now()).years})"
+        }
+        
+        viewToUpdate?.text = formattedString
     }
 }

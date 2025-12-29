@@ -57,7 +57,7 @@ class ManageVisibleFieldsDialog(val activity: BaseSimpleActivity, blurTarget: Bl
             .setBlurAutoUpdate(true)
 
         // Setup title inside BlurView
-        val titleTextView = view.findViewById<com.goodwy.commons.views.MyTextView>(com.goodwy.commons.R.id.dialog_title)
+        val titleTextView = view.findViewById<com.goodwy.commons.views.MyTextView>(R.id.dialog_title)
         titleTextView?.apply {
             visibility = android.view.View.VISIBLE
             setText(R.string.manage_shown_contact_fields)
@@ -65,20 +65,25 @@ class ManageVisibleFieldsDialog(val activity: BaseSimpleActivity, blurTarget: Bl
 
         // Setup custom buttons inside BlurView
         val primaryColor = activity.getProperPrimaryColor()
-        val positiveButton = view.findViewById<com.google.android.material.button.MaterialButton>(com.goodwy.commons.R.id.positive_button)
-        val negativeButton = view.findViewById<com.google.android.material.button.MaterialButton>(com.goodwy.commons.R.id.negative_button)
-        val buttonsContainer = view.findViewById<android.widget.LinearLayout>(com.goodwy.commons.R.id.buttons_container)
+        val buttonsContainer = view.findViewById<android.widget.LinearLayout>(R.id.buttons_container)
+        val positiveButton = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.positive_button)
+        val negativeButton = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.negative_button)
 
-        buttonsContainer?.visibility = android.view.View.VISIBLE
-        positiveButton?.apply {
-            visibility = android.view.View.VISIBLE
-            setTextColor(primaryColor)
-            setOnClickListener { dialogConfirmed() }
-        }
-        negativeButton?.apply {
-            visibility = android.view.View.VISIBLE
-            setTextColor(primaryColor)
-            setOnClickListener { dialog?.dismiss() }
+        if (buttonsContainer != null) {
+            buttonsContainer.visibility = android.view.View.VISIBLE
+            
+            positiveButton?.apply {
+                visibility = android.view.View.VISIBLE
+                text = activity.resources.getString(com.goodwy.commons.R.string.ok)
+                setTextColor(primaryColor)
+                setOnClickListener { dialogConfirmed() }
+            }
+            negativeButton?.apply {
+                visibility = android.view.View.VISIBLE
+                text = activity.resources.getString(com.goodwy.commons.R.string.cancel)
+                setTextColor(primaryColor)
+                setOnClickListener { dialog?.dismiss() }
+            }
         }
 
         activity.getAlertDialogBuilder()
