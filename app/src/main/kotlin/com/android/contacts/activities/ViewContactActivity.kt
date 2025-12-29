@@ -125,19 +125,6 @@ class ViewContactActivity : ContactActivity() {
         binding.contactStartCall.setCompoundDrawablesWithIntrinsicBounds(null, drawableCall, null, null)
         binding.contactStartCall.setTextColor(properPrimaryColor)
 
-        var drawableVideoCall = AppCompatResources.getDrawable(this, com.goodwy.commons.R.drawable.ic_videocam_vector)
-        drawableVideoCall = DrawableCompat.wrap(drawableVideoCall!!)
-        DrawableCompat.setTint(drawableVideoCall, properPrimaryColor)
-        DrawableCompat.setTintMode(drawableVideoCall, PorterDuff.Mode.SRC_IN)
-        binding.contactVideoCall.setCompoundDrawablesWithIntrinsicBounds(null, drawableVideoCall, null, null)
-        binding.contactVideoCall.setTextColor(properPrimaryColor)
-
-        var drawableMail = AppCompatResources.getDrawable(this, com.goodwy.commons.R.drawable.ic_mail_vector)
-        drawableMail = DrawableCompat.wrap(drawableMail!!)
-        DrawableCompat.setTint(drawableMail, properPrimaryColor)
-        DrawableCompat.setTintMode(drawableMail, PorterDuff.Mode.SRC_IN)
-        binding.contactSendEmail.setCompoundDrawablesWithIntrinsicBounds(null, drawableMail, null, null)
-        binding.contactSendEmail.setTextColor(properPrimaryColor)
     }
 
     private fun updateColors() {
@@ -158,7 +145,7 @@ class ViewContactActivity : ContactActivity() {
 
         binding.apply {
             arrayOf(
-                contactSendSms, contactStartCall, contactVideoCall, contactSendEmail,
+                contactSendSms, contactStartCall,
             ).forEach {
                 it.background.setTint(buttonBg)
             }
@@ -794,77 +781,14 @@ class ViewContactActivity : ContactActivity() {
     }
 
     private fun setupVideoCallActions() {
-        var sources = HashMap<Contact, String>()
-        sources[contact!!] = getPublicContactSourceSync(contact!!.source, contactSources)
-
-        if (mergeDuplicate) {
-            duplicateContacts.forEach {
-                sources[it] = getPublicContactSourceSync(it.source, contactSources)
-            }
-        }
-
-        if (sources.size > 1) {
-            sources = sources.toList().sortedBy { (key, value) -> value.lowercase(Locale.getDefault()) }.toMap() as LinkedHashMap<Contact, String>
-        }
-
-        val videoActions = arrayListOf<SocialAction>()
-        for ((key, value) in sources) {
-
-            if (value.lowercase(Locale.getDefault()) == WHATSAPP) {
-                val actions = getSocialActions(key.id)
-                if (actions.firstOrNull() != null) {
-                    val whatsappVideoActions = actions.filter { it.type == 1 } as ArrayList<SocialAction>
-                    videoActions.addAll(whatsappVideoActions)
-                }
-            }
-
-            if (value.lowercase(Locale.getDefault()) == SIGNAL) {
-                val actions = getSocialActions(key.id)
-                if (actions.firstOrNull() != null) {
-                    val signalVideoActions = actions.filter { it.type == 1 } as ArrayList<SocialAction>
-                    videoActions.addAll(signalVideoActions)
-                }
-            }
-
-            if (value.lowercase(Locale.getDefault()) == VIBER) {
-                val actions = getSocialActions(key.id)
-                if (actions.firstOrNull() != null) {
-                    val viberVideoActions = actions.filter { it.type == 1 } as ArrayList<SocialAction>
-                    videoActions.addAll(viberVideoActions)
-                }
-            }
-
-            if (value.lowercase(Locale.getDefault()) == TELEGRAM) {
-                val actions = getSocialActions(key.id)
-                if (actions.firstOrNull() != null) {
-                    val telegramVideoActions = actions.filter { it.type == 1 } as ArrayList<SocialAction>
-                    videoActions.addAll(telegramVideoActions)
-                }
-            }
-
-            if (value.lowercase(Locale.getDefault()) == THREEMA) {
-                val actions = getSocialActions(key.id)
-                if (actions.firstOrNull() != null) {
-                    val threemaVideoActions = actions.filter { it.type == 1 } as ArrayList<SocialAction>
-                    videoActions.addAll(threemaVideoActions)
-                }
-            }
-        }
-
         binding.contactSendSms.alpha = if (contact!!.phoneNumbers.isNotEmpty()) 1f else 0.5f
         binding.contactStartCall.alpha = if (contact!!.phoneNumbers.isNotEmpty()) 1f else 0.5f
-        binding.contactVideoCall.alpha = if (videoActions.isNotEmpty()) 1f else 0.5f
-        binding.contactSendEmail.alpha = if (contact!!.emails.isNotEmpty()) 1f else 0.5f
 
         if (contact!!.phoneNumbers.isNotEmpty()) binding.contactSendSms.setOnClickListener { trySendSMSRecommendation() }
         if (contact!!.phoneNumbers.isNotEmpty()) binding.contactStartCall.setOnClickListener { tryStartCallRecommendation(contact!!) }
-        if (videoActions.isNotEmpty()) binding.contactVideoCall.setOnClickListener { showVideoCallAction(videoActions) }
-        if (contact!!.emails.isNotEmpty()) binding.contactSendEmail.setOnClickListener { trySendEmail() }
 
         binding.contactSendSms.setOnLongClickListener { toast(com.goodwy.commons.R.string.send_sms); true; }
         binding.contactStartCall.setOnLongClickListener { toast(R.string.call_contact); true; }
-        binding.contactVideoCall.setOnLongClickListener { toast(com.goodwy.strings.R.string.video_call); true; }
-        binding.contactSendEmail.setOnLongClickListener { toast(com.goodwy.commons.R.string.send_email); true; }
     }
 
     // a contact cannot have different emails per contact source. Such contacts are handled as separate ones, not duplicates of each other

@@ -97,21 +97,12 @@ class EditContactActivity : ContactActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        showTransparentTop = true
-        isMaterialActivity = true
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
 
         if (checkAppSideloading()) {
             return
         }
-
-        updateMaterialActivityViews(
-            binding.contactWrapper,
-            binding.contactHolder,
-            useTransparentNavigation = true,
-            useTopSearchMenu = false
-        )
 
         surfaceColor = if ((isLightTheme() || isGrayTheme()) && !isDynamicTheme()) Color.WHITE else getSurfaceColor()
         binding.contactWrapper.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
