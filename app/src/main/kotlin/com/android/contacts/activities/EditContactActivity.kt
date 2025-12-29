@@ -274,7 +274,6 @@ class EditContactActivity : ContactActivity() {
             binding.contactNumbersIcon,
             binding.contactEmailsIcon,
             binding.contactAddressesIcon,
-            binding.contactImsIcon,
             binding.contactEventsIcon,
             binding.contactRelationsIcon,
             binding.contactNotesIcon,
@@ -292,7 +291,6 @@ class EditContactActivity : ContactActivity() {
         binding.contactNumbersAddNewHolder.setOnClickListener { addNewPhoneNumberField() }
         binding.contactEmailsAddNewHolder.setOnClickListener { addNewEmailField() }
         binding.contactAddressesAddNewHolder.setOnClickListener { addNewAddressField() }
-        binding.contactImsAddNewHolder.setOnClickListener { addNewIMField() }
         binding.contactEventsAddNewHolder.setOnClickListener { addNewEventField() }
         binding.contactWebsitesAddNewHolder.setOnClickListener { addNewWebsiteField() }
         binding.contactGroupsAddNewHolder.setOnClickListener { showSelectGroupsDialog() }
@@ -309,7 +307,8 @@ class EditContactActivity : ContactActivity() {
             setOnLongClickListener { toast(R.string.toggle_favorite); true; }
         }
 
-        val nameTextViews = arrayOf(binding.contactFirstName, binding.contactMiddleName, binding.contactSurname).filter { it.isVisible() }
+        // Use single name field for autocomplete
+        val nameTextViews = arrayOf(binding.contactFirstName).filter { it.isVisible() }
         if (nameTextViews.isNotEmpty()) {
             setupAutoComplete(nameTextViews)
         }
@@ -502,30 +501,26 @@ class EditContactActivity : ContactActivity() {
     private fun setupFieldVisibility() {
         val showFields = config.showContactFields
 
-        binding.contactPrefix.beVisibleIf(showFields and SHOW_PREFIX_FIELD != 0)
+        // Hide prefix, middleName, surname, suffix, nickname - use single name field (firstName)
+        binding.contactPrefix.beGone()
         binding.contactFirstName.beVisibleIf(showFields and SHOW_FIRST_NAME_FIELD != 0)
-        binding.contactMiddleName.beVisibleIf(showFields and SHOW_MIDDLE_NAME_FIELD != 0)
-        binding.contactSurname.beVisibleIf(showFields and SHOW_SURNAME_FIELD != 0)
-        binding.contactSuffix.beVisibleIf(showFields and SHOW_SUFFIX_FIELD != 0)
-        binding.contactNickname.beVisibleIf(showFields and SHOW_NICKNAME_FIELD != 0)
+        binding.contactMiddleName.beGone()
+        binding.contactSurname.beGone()
+        binding.contactSuffix.beGone()
+        binding.contactNickname.beGone() // Nickname removed
 
         val isOrganizationVisible = showFields and SHOW_ORGANIZATION_FIELD != 0
         binding.contactOrganizationCompany.beVisibleIf(isOrganizationVisible)
         binding.contactOrganizationJobPosition.beVisibleIf(isOrganizationVisible)
         binding.dividerContactOrganizationCompany.beVisibleIf(isOrganizationVisible)
 
-        binding.dividerContactPrefix.beVisibleIf(showFields and SHOW_PREFIX_FIELD != 0 &&
-            (isOrganizationVisible || showFields and SHOW_NICKNAME_FIELD != 0 || showFields and SHOW_SUFFIX_FIELD != 0
-                || showFields and SHOW_SURNAME_FIELD != 0 || showFields and SHOW_MIDDLE_NAME_FIELD != 0 || showFields and SHOW_FIRST_NAME_FIELD != 0))
-        binding.dividerContactFirstName.beVisibleIf(showFields and SHOW_FIRST_NAME_FIELD != 0 &&
-            (isOrganizationVisible || showFields and SHOW_NICKNAME_FIELD != 0 || showFields and SHOW_SUFFIX_FIELD != 0
-                || showFields and SHOW_SURNAME_FIELD != 0 || showFields and SHOW_MIDDLE_NAME_FIELD != 0))
-        binding.dividerContactMiddleName.beVisibleIf(showFields and SHOW_MIDDLE_NAME_FIELD != 0 &&
-            (isOrganizationVisible || showFields and SHOW_NICKNAME_FIELD != 0 || showFields and SHOW_SUFFIX_FIELD != 0 || showFields and SHOW_SURNAME_FIELD != 0))
-        binding.dividerContactSurname.beVisibleIf(showFields and SHOW_SURNAME_FIELD != 0 &&
-            (isOrganizationVisible || showFields and SHOW_NICKNAME_FIELD != 0 || showFields and SHOW_SUFFIX_FIELD != 0))
-        binding.dividerContactSuffix.beVisibleIf(showFields and SHOW_SUFFIX_FIELD != 0 && (isOrganizationVisible || showFields and SHOW_NICKNAME_FIELD != 0))
-        binding.dividerContactNickname.beVisibleIf(showFields and SHOW_NICKNAME_FIELD != 0 && isOrganizationVisible)
+        // Hide dividers for hidden name fields - use single name field
+        binding.dividerContactPrefix.beGone()
+        binding.dividerContactFirstName.beVisibleIf(showFields and SHOW_FIRST_NAME_FIELD != 0 && isOrganizationVisible)
+        binding.dividerContactMiddleName.beGone()
+        binding.dividerContactSurname.beGone()
+        binding.dividerContactSuffix.beGone()
+        binding.dividerContactNickname.beGone() // Nickname removed
 
         binding.contactSourceHolder.beVisibleIf(showFields and SHOW_CONTACT_SOURCE_FIELD != 0)
         binding.contactSourceTitleHolder.beVisibleIf(showFields and SHOW_CONTACT_SOURCE_FIELD != 0)
@@ -545,10 +540,10 @@ class EditContactActivity : ContactActivity() {
         binding.contactAddressesHolder.beVisibleIf(areAddressesVisible)
         binding.contactAddressesAddNewHolder.beVisibleIf(areAddressesVisible)
 
-        val areIMsVisible = showFields and SHOW_IMS_FIELD != 0
-        binding.contactImsTitleHolder.beVisibleIf(areIMsVisible)
-        binding.contactImsHolder.beVisibleIf(areIMsVisible)
-        binding.contactImsAddNewHolder.beVisibleIf(areIMsVisible)
+        // IMs removed - no longer supported
+        binding.contactImsTitleHolder.beGone()
+        binding.contactImsHolder.beGone()
+        binding.contactImsAddNewHolder.beGone()
 
         val areEventsVisible = showFields and SHOW_EVENTS_FIELD != 0
         binding.contactEventsTitleHolder.beVisibleIf(areEventsVisible)
@@ -585,7 +580,6 @@ class EditContactActivity : ContactActivity() {
         setupPhoneNumbers()
         setupEmails()
         setupAddresses()
-        setupIMs()
         setupNotes()
         setupOrganization()
         setupWebsites()
@@ -597,12 +591,13 @@ class EditContactActivity : ContactActivity() {
 
     private fun setupNames() {
         contact!!.apply {
-            binding.contactPrefix.setText(prefix)
+            // Use single name field - store in firstName
             binding.contactFirstName.setText(firstName)
-            binding.contactMiddleName.setText(middleName)
-            binding.contactSurname.setText(surname)
-            binding.contactSuffix.setText(suffix)
-            binding.contactNickname.setText(nickname)
+            binding.contactPrefix.setText("")
+            binding.contactMiddleName.setText("")
+            binding.contactSurname.setText("")
+            binding.contactSuffix.setText("")
+            binding.contactNickname.setText("") // Nickname removed
         }
     }
 
@@ -778,40 +773,6 @@ class EditContactActivity : ContactActivity() {
 
         binding.contactAddressesHolder.setBackgroundColor(surfaceColor)
         binding.contactAddressesAddNewHolder.setBackgroundColor(surfaceColor)
-    }
-
-    private fun setupIMs() {
-        //binding.contactImsHolder.removeAllViews()
-        contact!!.IMs.forEachIndexed { index, IM ->
-            val imHolderView = binding.contactImsHolder.getChildAt(index)
-            val imHolder = if (imHolderView == null) {
-                ItemEditImBinding.inflate(layoutInflater, binding.contactImsHolder, false).apply {
-                    binding.contactImsHolder.addView(root)
-                }
-            } else {
-                ItemEditImBinding.bind(imHolderView)
-            }
-
-            imHolder.apply {
-                contactIm.setText(IM.value)
-                contactIm.hint = getIMHintText(IM.type)
-                setupIMTypePicker(contactImType, IM.type, IM.label, contactIm)
-
-                val getProperTextColor = getProperTextColor()
-                dividerVerticalContactIm.setBackgroundColor(getProperTextColor)
-                dividerContactIm.setBackgroundColor(getProperTextColor)
-                contactImType.setTextColor(getProperPrimaryColor())
-                contactImRemove.apply {
-                    beVisible()
-                    setOnClickListener {
-                        binding.contactImsHolder.removeView(imHolder.root)
-                    }
-                }
-            }
-        }
-
-        binding.contactImsHolder.setBackgroundColor(surfaceColor)
-        binding.contactImsAddNewHolder.setBackgroundColor(surfaceColor)
     }
 
     private fun setupNotes() {
@@ -1181,20 +1142,6 @@ class EditContactActivity : ContactActivity() {
             binding.contactAddressesAddNewHolder.setBackgroundColor(surfaceColor)
         }
 
-        if (contact!!.IMs.isEmpty()) {
-            //binding.contactImsHolder.removeAllViews()
-            val IMHolder = ItemEditImBinding.bind(binding.contactImsHolder.getChildAt(0))
-            IMHolder.contactImType.apply {
-                setTextColor(getProperPrimaryColor)
-                setupIMTypePicker(this, DEFAULT_IM_TYPE, "", IMHolder.contactIm)
-            }
-            IMHolder.dividerVerticalContactIm.setBackgroundColor(getProperTextColor)
-            IMHolder.dividerContactIm.setBackgroundColor(getProperTextColor)
-
-            binding.contactImsHolder.setBackgroundColor(surfaceColor)
-            binding.contactImsAddNewHolder.setBackgroundColor(surfaceColor)
-        }
-
         if (contact!!.events.isEmpty()) {
             //binding.contactEventsHolder.removeAllViews()
             val eventHolder = ItemEventBinding.bind(binding.contactEventsHolder.getChildAt(0))
@@ -1279,33 +1226,6 @@ class EditContactActivity : ContactActivity() {
                 showAddressTypePicker(it as TextView)
             }
         }
-    }
-
-    private fun setupIMTypePicker(imTypeField: TextView, type: Int, label: String, imHintField: TextView) {
-        imTypeField.apply {
-            text = getIMTypeText(type, label)
-            setOnClickListener {
-                showIMTypePicker(it as TextView, imHintField)
-            }
-        }
-    }
-
-    private fun getIMHintText(type: Int): String {
-        return getString(
-            when (type) {
-                Im.PROTOCOL_QQ -> R.string.qq_id
-                PROTOCOL_WECOM -> R.string.userid
-                PROTOCOL_WECHAT -> R.string.wechat_id
-                PROTOCOL_GOOGLE_CHAT, Im.PROTOCOL_GOOGLE_TALK -> com.goodwy.commons.R.string.email
-                PROTOCOL_DISCORD -> R.string.discord_tag
-                PROTOCOL_MATRIX -> R.string.matrix_id
-                PROTOCOL_LINE -> R.string.line_id
-                PROTOCOL_VIBER, PROTOCOL_WHATSAPP -> R.string.phone_number_international_format
-                PROTOCOL_LINKEDIN -> R.string.linkedin_id
-                PROTOCOL_THREEMA -> R.string.threema_id
-                else -> R.string.username
-            }
-        )
     }
 
     private fun setupEventTypePicker(eventHolder: ItemEventBinding, type: Int = DEFAULT_EVENT_TYPE, label: String) {
@@ -1520,51 +1440,6 @@ class EditContactActivity : ContactActivity() {
         }
     }
 
-    private fun showIMTypePicker(imTypeField: TextView, imHintField: TextView) {
-        val items = arrayListOf(
-            RadioItem(PROTOCOL_DISCORD, getString(com.goodwy.commons.R.string.discord)),
-            RadioItem(PROTOCOL_FACEBOOK, getString(com.goodwy.commons.R.string.facebook)),
-            RadioItem(PROTOCOL_GOOGLE_CHAT, getString(com.goodwy.commons.R.string.google_chat)),
-            RadioItem(PROTOCOL_INSTAGRAM, getString(com.goodwy.commons.R.string.instagram)),
-            RadioItem(Im.PROTOCOL_JABBER, getString(com.goodwy.commons.R.string.jabber)),
-            RadioItem(PROTOCOL_LINE, getString(com.goodwy.commons.R.string.line)),
-            RadioItem(PROTOCOL_LINKEDIN, getString(com.goodwy.commons.R.string.linkedin)),
-            RadioItem(PROTOCOL_MATRIX, getString(com.goodwy.commons.R.string.matrix)),
-            RadioItem(Im.PROTOCOL_QQ, getString(com.goodwy.commons.R.string.qq)),
-            RadioItem(PROTOCOL_SIGNAL, getString(com.goodwy.commons.R.string.signal)),
-            RadioItem(PROTOCOL_TEAMS, getString(com.goodwy.commons.R.string.teams)),
-            RadioItem(PROTOCOL_TELEGRAM, getString(com.goodwy.commons.R.string.telegram)),
-            RadioItem(PROTOCOL_TELEGRAM_CHANNEL, getString(com.goodwy.commons.R.string.telegram_channel)),
-            RadioItem(PROTOCOL_THREEMA, getString(com.goodwy.commons.R.string.threema)),
-            RadioItem(PROTOCOL_TWITTER, getString(com.goodwy.commons.R.string.twitter)),
-            RadioItem(PROTOCOL_VIBER, getString(com.goodwy.commons.R.string.viber)),
-            RadioItem(PROTOCOL_WECHAT, getString(com.goodwy.commons.R.string.wechat)),
-            RadioItem(PROTOCOL_WECOM, getString(com.goodwy.commons.R.string.wecom)),
-            RadioItem(PROTOCOL_WHATSAPP, getString(com.goodwy.commons.R.string.whatsapp)),
-//            RadioItem(Im.PROTOCOL_AIM, getString(com.goodwy.commons.R.string.aim)),
-//            RadioItem(Im.PROTOCOL_MSN, getString(com.goodwy.commons.R.string.windows_live)),
-//            RadioItem(Im.PROTOCOL_YAHOO, getString(com.goodwy.commons.R.string.yahoo)),
-//            RadioItem(Im.PROTOCOL_SKYPE, getString(com.goodwy.commons.R.string.skype)),
-//            RadioItem(Im.PROTOCOL_GOOGLE_TALK, getString(com.goodwy.commons.R.string.hangouts)),
-//            RadioItem(Im.PROTOCOL_ICQ, getString(com.goodwy.commons.R.string.icq)),
-            RadioItem(Im.PROTOCOL_CUSTOM, getString(com.goodwy.commons.R.string.custom))
-        )
-
-        val currentIMTypeId = getIMTypeId(imTypeField.value)
-        val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
-            ?: throw IllegalStateException("mainBlurTarget not found")
-        RadioGroupDialog(this, items, currentIMTypeId, showOKButton = true, blurTarget = blurTarget) {
-            if (it as Int == Im.PROTOCOL_CUSTOM) {
-                CustomLabelDialog(this, blurTarget) {
-                    imTypeField.text = it
-                }
-            } else {
-                imTypeField.text = getIMTypeText(it, "")
-            }
-            imHintField.hint = getIMHintText(it)
-        }
-    }
-
     private fun showEventTypePicker(eventTypeField: TextView) {
         val items = arrayListOf(
             RadioItem(CommonDataKinds.Event.TYPE_BIRTHDAY, getString(com.goodwy.commons.R.string.birthday)),
@@ -1617,8 +1492,9 @@ class EditContactActivity : ContactActivity() {
             return
         }
 
+        // Use single name field - only check firstName (nickname removed)
         val contactFields = arrayListOf(
-            binding.contactPrefix, binding.contactFirstName, binding.contactMiddleName, binding.contactSurname, binding.contactSuffix, binding.contactNickname,
+            binding.contactFirstName,
             binding.contactNotes, binding.contactOrganizationCompany, binding.contactOrganizationJobPosition
         )
 
@@ -1627,7 +1503,6 @@ class EditContactActivity : ContactActivity() {
                 getFilledPhoneNumbers().isEmpty() &&
                 getFilledEmails().isEmpty() &&
                 getFilledAddresses().isEmpty() &&
-                getFilledIMs().isEmpty() &&
                 getFilledEvents().isEmpty() &&
                 getFilledRelations().isEmpty() &&
                 getFilledWebsites().isEmpty()
@@ -1663,23 +1538,23 @@ class EditContactActivity : ContactActivity() {
         val filledPhoneNumbers = getFilledPhoneNumbers()
         val filledEmails = getFilledEmails()
         val filledAddresses = getFilledAddresses()
-        val filledIMs = getFilledIMs()
         val filledEvents = getFilledEvents()
         val filledWebsites = getFilledWebsites()
         val filledRelations = getFilledRelations()
 
+        // Use single name field - store in firstName, clear other name fields
         val newContact = contact!!.copy(
-            prefix = binding.contactPrefix.value,
+            prefix = "",
             firstName = binding.contactFirstName.value,
-            middleName = binding.contactMiddleName.value,
-            surname = binding.contactSurname.value,
-            suffix = binding.contactSuffix.value,
-            nickname = binding.contactNickname.value,
+            middleName = "",
+            surname = "",
+            suffix = "",
+            nickname = "", // Nickname removed
             photoUri = currentContactPhotoPath,
             phoneNumbers = filledPhoneNumbers,
             emails = filledEmails,
             addresses = filledAddresses,
-            IMs = filledIMs,
+            IMs = ArrayList(), // IMs removed - always empty
             events = filledEvents,
             starred = if (isContactStarred()) 1 else 0,
             notes = binding.contactNotes.value,
@@ -1769,22 +1644,6 @@ class EditContactActivity : ContactActivity() {
             }
         }
         return addresses
-    }
-
-    private fun getFilledIMs(): ArrayList<IM> {
-        val IMs = ArrayList<IM>()
-        val IMsCount = binding.contactImsHolder.childCount
-        for (i in 0 until IMsCount) {
-            val IMsHolder = ItemEditImBinding.bind(binding.contactImsHolder.getChildAt(i))
-            val IM = IMsHolder.contactIm.value
-            val IMType = getIMTypeId(IMsHolder.contactImType.value)
-            val IMLabel = if (IMType == Im.PROTOCOL_CUSTOM) IMsHolder.contactImType.value else ""
-
-            if (IM.isNotEmpty()) {
-                IMs.add(IM(IM, IMType, IMLabel))
-            }
-        }
-        return IMs
     }
 
     private fun getFilledEvents(): ArrayList<Event> {
@@ -2015,31 +1874,6 @@ class EditContactActivity : ContactActivity() {
 
         binding.contactAddressesHolder.setBackgroundColor(surfaceColor)
         binding.contactAddressesAddNewHolder.setBackgroundColor(surfaceColor)
-    }
-
-    private fun addNewIMField() {
-        val IMHolder = ItemEditImBinding.inflate(layoutInflater, binding.contactImsHolder, false)
-        updateTextColors(IMHolder.root)
-        setupIMTypePicker(IMHolder.contactImType, DEFAULT_IM_TYPE, "", IMHolder.contactIm)
-        binding.contactImsHolder.addView(IMHolder.root)
-        binding.contactImsHolder.onGlobalLayout {
-            IMHolder.contactIm.requestFocus()
-            showKeyboard(IMHolder.contactIm)
-        }
-
-        IMHolder.apply {
-            val getProperTextColor = getProperTextColor()
-            dividerVerticalContactIm.setBackgroundColor(getProperTextColor)
-            dividerContactIm.setBackgroundColor(getProperTextColor)
-            contactImType.setTextColor(getProperPrimaryColor())
-            contactImRemove.apply {
-                beVisible()
-                setOnClickListener {
-                    binding.contactImsHolder.removeView(IMHolder.root)
-                    hideKeyboard()
-                }
-            }
-        }
     }
 
     private fun addNewEventField() {
@@ -2387,37 +2221,6 @@ class EditContactActivity : ContactActivity() {
         else -> StructuredPostal.TYPE_CUSTOM
     }
 
-    private fun getIMTypeId(value: String) = when (value.uppercase()) {
-        getString(com.goodwy.commons.R.string.telegram).uppercase() -> PROTOCOL_TELEGRAM
-        getString(com.goodwy.commons.R.string.telegram_channel).uppercase() -> PROTOCOL_TELEGRAM_CHANNEL
-        getString(com.goodwy.commons.R.string.whatsapp).uppercase() -> PROTOCOL_WHATSAPP
-        getString(com.goodwy.commons.R.string.instagram).uppercase() -> PROTOCOL_INSTAGRAM
-        getString(com.goodwy.commons.R.string.facebook).uppercase() -> PROTOCOL_FACEBOOK
-        getString(com.goodwy.commons.R.string.viber).uppercase() -> PROTOCOL_VIBER
-        getString(com.goodwy.commons.R.string.signal).uppercase() -> PROTOCOL_SIGNAL
-        getString(com.goodwy.commons.R.string.twitter).uppercase() -> PROTOCOL_TWITTER
-        getString(com.goodwy.commons.R.string.linkedin).uppercase() -> PROTOCOL_LINKEDIN
-        getString(com.goodwy.commons.R.string.threema).uppercase() -> PROTOCOL_THREEMA
-
-        getString(com.goodwy.commons.R.string.teams).uppercase() -> PROTOCOL_TEAMS
-        getString(com.goodwy.commons.R.string.wecom).uppercase() -> PROTOCOL_WECOM
-        getString(com.goodwy.commons.R.string.google_chat).uppercase() -> PROTOCOL_GOOGLE_CHAT
-        getString(com.goodwy.commons.R.string.matrix).uppercase() -> PROTOCOL_MATRIX
-        getString(com.goodwy.commons.R.string.discord).uppercase() -> PROTOCOL_DISCORD
-        getString(com.goodwy.commons.R.string.wechat).uppercase() -> PROTOCOL_WECHAT
-        getString(com.goodwy.commons.R.string.line).uppercase() -> PROTOCOL_LINE
-        // old
-        getString(com.goodwy.commons.R.string.aim).uppercase() -> Im.PROTOCOL_AIM
-        getString(com.goodwy.commons.R.string.windows_live).uppercase() -> Im.PROTOCOL_MSN
-        getString(com.goodwy.commons.R.string.yahoo).uppercase() -> Im.PROTOCOL_YAHOO
-        getString(com.goodwy.commons.R.string.skype).uppercase() -> Im.PROTOCOL_SKYPE
-        getString(com.goodwy.commons.R.string.qq).uppercase() -> Im.PROTOCOL_QQ
-        getString(com.goodwy.commons.R.string.hangouts).uppercase() -> Im.PROTOCOL_GOOGLE_TALK
-        getString(com.goodwy.commons.R.string.icq).uppercase() -> Im.PROTOCOL_ICQ
-        getString(com.goodwy.commons.R.string.jabber).uppercase() -> Im.PROTOCOL_JABBER
-        else -> Im.PROTOCOL_CUSTOM
-    }
-
     private fun setupAutoComplete(nameTextViews: List<MyAutoCompleteTextView>) {
         ContactsHelper(this).getContacts { contacts ->
             val adapter = AutoCompleteTextViewAdapter(this, contacts)
@@ -2427,14 +2230,9 @@ class EditContactActivity : ContactActivity() {
                 view.setOnItemClickListener { _, _, position, _ ->
                     val selectedContact = adapter.resultList[position]
 
+                    // Use single name field
                     if (binding.contactFirstName.isVisible()) {
                         binding.contactFirstName.setText(selectedContact.firstName)
-                    }
-                    if (binding.contactMiddleName.isVisible()) {
-                        binding.contactMiddleName.setText(selectedContact.middleName)
-                    }
-                    if (binding.contactSurname.isVisible()) {
-                        binding.contactSurname.setText(selectedContact.surname)
                     }
                 }
                 view.doAfterTextChanged {

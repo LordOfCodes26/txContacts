@@ -356,7 +356,6 @@ class ViewContactActivity : ContactActivity() {
         setupVideoCallActions()
         setupEmails()
         setupAddresses()
-        setupIMs()
         setupEvents()
         setupRelations()
         setupWebsites()
@@ -419,13 +418,11 @@ class ViewContactActivity : ContactActivity() {
     }
 
     private fun setupNames() {
-        var displayName = contact!!.getNameToDisplay()
-        if (contact!!.nickname.isNotEmpty() && !config.showNicknameInsteadNames) {
-            displayName += " (${contact!!.nickname})"
-        }
+        // Use single name field - nickname removed
+        val displayName = contact!!.getNameToDisplay()
 
-        val showNameFields = showFields and SHOW_PREFIX_FIELD != 0 || showFields and SHOW_FIRST_NAME_FIELD != 0 || showFields and SHOW_MIDDLE_NAME_FIELD != 0 ||
-            showFields and SHOW_SURNAME_FIELD != 0 || showFields and SHOW_SUFFIX_FIELD != 0
+        // Use single name field - only check first name field visibility
+        val showNameFields = showFields and SHOW_FIRST_NAME_FIELD != 0
 
         binding.topDetails.contactName.text = displayName
         binding.topDetails.contactName.setTextColor(getProperTextColor())
@@ -912,49 +909,6 @@ class ViewContactActivity : ContactActivity() {
             binding.contactAddressesHolder.beVisible()
         } else {
             binding.contactAddressesHolder.beGone()
-        }
-    }
-
-    private fun setupIMs() {
-        var IMs = contact!!.IMs.toMutableSet() as LinkedHashSet<IM>
-
-        if (mergeDuplicate) {
-            duplicateContacts.forEach {
-                IMs.addAll(it.IMs)
-            }
-        }
-
-        IMs = IMs.sortedBy { it.type }.toMutableSet() as LinkedHashSet<IM>
-        fullContact!!.IMs = IMs.toMutableList() as ArrayList<IM>
-        binding.contactImsHolder.removeAllViews()
-
-        if (IMs.isNotEmpty() && showFields and SHOW_IMS_FIELD != 0) {
-            val isFirstItem = IMs.first()
-            val isLastItem = IMs.last()
-            IMs.forEach {
-                ItemViewImBinding.inflate(layoutInflater, binding.contactImsHolder, false).apply {
-                    val IM = it
-                    binding.contactImsHolder.addView(root)
-                    contactIm.text = IM.value
-                    contactImType.text = getIMTypeText(IM.type, IM.label)
-
-                    binding.contactImsHolder.background .setTint(buttonBg)
-
-                    contactImIcon.isVisible = isFirstItem == IM
-                    contactImIcon.setColorFilter(getProperTextColor())
-                    dividerContactIm.setBackgroundColor(getProperTextColor())
-                    dividerContactIm.isGone = isLastItem == IM
-                    contactIm.setTextColor(getProperPrimaryColor())
-
-                    root.copyOnLongClick(IM.value)
-                    root.setOnClickListener {
-                        openMessengerProfile(IM.value, IM.type)
-                    }
-                }
-            }
-            binding.contactImsHolder.beVisible()
-        } else {
-            binding.contactImsHolder.beGone()
         }
     }
 
