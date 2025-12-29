@@ -46,6 +46,7 @@
     <string name="move_contacts">Move contacts</string>
     <string name="move_contacts_to">Move contacts to</string>
     <string name="no_move_destinations_available">No move destinations available</string>
+    <string name="export_to_vcf">Export to VCF</string>
 
     <!-- Photo -->
     <string name="remove_photo">Remove photo</string>

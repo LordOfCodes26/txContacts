@@ -77,17 +77,17 @@ class SettingsActivity : SimpleActivity() {
         val properBackgroundColor = if (isDynamicTheme() && !isSystemInDarkMode()) getSurfaceColor() else getProperBackgroundColor()
         setupTopAppBar(binding.settingsAppbar, NavigationIcon.Arrow, topBarColor = properBackgroundColor)
 
-        setupCustomizeColors()
+//        setupCustomizeColors()
         setupShowDialpadButton()
-        setupOverflowIcon()
-        setupFloatingButtonStyle()
+//        setupOverflowIcon()
+//        setupFloatingButtonStyle()
         setupUseColoredContacts()
         setupContactsColorList()
 
         setupManageShownContactFields()
         setupMergeDuplicateContacts()
         setupShowCallConfirmation()
-        setupShowPrivateContacts()
+//        setupShowPrivateContacts()
         setupOnContactClick()
         setupShowContactsWithNumbers()
         setupFormatPhoneNumbers()
@@ -114,18 +114,12 @@ class SettingsActivity : SimpleActivity() {
         setupShowContactThumbnails()
         setupContactThumbnailsSize()
         setupShowPhoneNumbers()
-        setupStartNameWithSurname()
-        setupShowNicknameInsteadNames()
-        setupChangeColourTopBar()
 
         setupExportContacts()
         setupImportContacts()
         setupEnableAutomaticBackups()
         setupInfoAutomaticBackups()
         setupManageAutomaticBackups()
-
-        setupTipJar()
-        setupAbout()
 
         updateTextColors(binding.settingsHolder)
 
@@ -135,8 +129,7 @@ class SettingsActivity : SimpleActivity() {
             binding.settingsTabsLabel,
             binding.settingsSwipeGesturesLabel,
             binding.settingsListViewLabel,
-            binding.settingsBackupsLabel,
-            binding.settingsOtherLabel).forEach {
+            binding.settingsBackupsLabel).forEach {
             it.setTextColor(getProperPrimaryColor())
         }
 
@@ -147,41 +140,37 @@ class SettingsActivity : SimpleActivity() {
             binding.settingsSwipeGesturesHolder,
             binding.settingsListViewHolder,
             binding.settingsBackupsHolder,
-            binding.settingsOtherHolder
         ).forEach {
             it.setCardBackgroundColor(getSurfaceColor())
         }
 
         arrayOf(
-            binding.settingsCustomizeColorsChevron,
             binding.settingsManageShownTabsChevron,
             binding.settingsManageContactFieldsChevron,
             binding.settingsManageContactFieldsChevron,
             binding.contactsImportChevron,
             binding.contactsExportChevron,
             binding.settingsManageAutomaticBackupsChevron,
-            binding.settingsTipJarChevron,
-            binding.settingsAboutChevron
         ).forEach {
             it.applyColorFilter(getProperTextColor())
         }
     }
 
 
-    private fun setupCustomizeColors() = binding.apply {
-        settingsCustomizeColorsHolder.setOnClickListener {
-            startCustomizationActivity(
-                showAccentColor = true,
-                productIdList = arrayListOf(productIdX1, productIdX2, productIdX3),
-                productIdListRu = arrayListOf(productIdX1, productIdX2, productIdX3),
-                subscriptionIdList = arrayListOf(subscriptionIdX1, subscriptionIdX2, subscriptionIdX3),
-                subscriptionIdListRu = arrayListOf(subscriptionIdX1, subscriptionIdX2, subscriptionIdX3),
-                subscriptionYearIdList = arrayListOf(subscriptionYearIdX1, subscriptionYearIdX2, subscriptionYearIdX3),
-                subscriptionYearIdListRu = arrayListOf(subscriptionYearIdX1, subscriptionYearIdX2, subscriptionYearIdX3),
-                showAppIconColor = true
-            )
-        }
-    }
+//    private fun setupCustomizeColors() = binding.apply {
+//        settingsCustomizeColorsHolder.setOnClickListener {
+//            startCustomizationActivity(
+//                showAccentColor = true,
+//                productIdList = arrayListOf(productIdX1, productIdX2, productIdX3),
+//                productIdListRu = arrayListOf(productIdX1, productIdX2, productIdX3),
+//                subscriptionIdList = arrayListOf(subscriptionIdX1, subscriptionIdX2, subscriptionIdX3),
+//                subscriptionIdListRu = arrayListOf(subscriptionIdX1, subscriptionIdX2, subscriptionIdX3),
+//                subscriptionYearIdList = arrayListOf(subscriptionYearIdX1, subscriptionYearIdX2, subscriptionYearIdX3),
+//                subscriptionYearIdListRu = arrayListOf(subscriptionYearIdX1, subscriptionYearIdX2, subscriptionYearIdX3),
+//                showAppIconColor = true
+//            )
+//        }
+//    }
 
     private fun setupManageShownContactFields() {
         binding.settingsManageContactFieldsHolder.setOnClickListener {
@@ -280,7 +269,7 @@ class SettingsActivity : SimpleActivity() {
                 config.bottomNavigationBar = it == 1
                 config.needRestart = true
                 binding.settingsNavigationBarStyle.text = getNavigationBarStyleText()
-                binding.settingsChangeColourTopBarHolder.beVisibleIf(config.bottomNavigationBar)
+//                binding.settingsChangeColourTopBarHolder.beVisibleIf(config.bottomNavigationBar)
             }
         }
     }
@@ -403,38 +392,38 @@ class SettingsActivity : SimpleActivity() {
         }
     }
 
-    private fun setupStartNameWithSurname() {
-        binding.apply {
-            settingsStartNameWithSurname.isChecked = config.startNameWithSurname
-            settingsStartNameWithSurnameHolder.setOnClickListener {
-                settingsStartNameWithSurname.toggle()
-                config.startNameWithSurname = settingsStartNameWithSurname.isChecked
-            }
-        }
-    }
-
-    private fun setupShowNicknameInsteadNames() {
-        binding.apply {
-            settingsShowNicknameInsteadNames.isChecked = config.showNicknameInsteadNames
-            settingsShowNicknameInsteadNamesHolder.setOnClickListener {
-                settingsShowNicknameInsteadNames.toggle()
-                config.showNicknameInsteadNames = settingsShowNicknameInsteadNames.isChecked
-                config.needRestart = true
-            }
-        }
-    }
-
-    private fun setupChangeColourTopBar() {
-        binding.apply {
-            settingsChangeColourTopBarHolder.beVisibleIf(config.bottomNavigationBar)
-            settingsChangeColourTopBar.isChecked = config.changeColourTopBar
-            settingsChangeColourTopBarHolder.setOnClickListener {
-                settingsChangeColourTopBar.toggle()
-                config.changeColourTopBar = settingsChangeColourTopBar.isChecked
-                config.needRestart = true
-            }
-        }
-    }
+//    private fun setupStartNameWithSurname() {
+//        binding.apply {
+//            settingsStartNameWithSurname.isChecked = config.startNameWithSurname
+//            settingsStartNameWithSurnameHolder.setOnClickListener {
+//                settingsStartNameWithSurname.toggle()
+//                config.startNameWithSurname = settingsStartNameWithSurname.isChecked
+//            }
+//        }
+//    }
+//
+//    private fun setupShowNicknameInsteadNames() {
+//        binding.apply {
+//            settingsShowNicknameInsteadNames.isChecked = config.showNicknameInsteadNames
+//            settingsShowNicknameInsteadNamesHolder.setOnClickListener {
+//                settingsShowNicknameInsteadNames.toggle()
+//                config.showNicknameInsteadNames = settingsShowNicknameInsteadNames.isChecked
+//                config.needRestart = true
+//            }
+//        }
+//    }
+//
+//    private fun setupChangeColourTopBar() {
+//        binding.apply {
+//            settingsChangeColourTopBarHolder.beVisibleIf(config.bottomNavigationBar)
+//            settingsChangeColourTopBar.isChecked = config.changeColourTopBar
+//            settingsChangeColourTopBarHolder.setOnClickListener {
+//                settingsChangeColourTopBar.toggle()
+//                config.changeColourTopBar = settingsChangeColourTopBar.isChecked
+//                config.needRestart = true
+//            }
+//        }
+//    }
 
     private fun setupShowDialpadButton() {
         binding.apply {
@@ -446,26 +435,26 @@ class SettingsActivity : SimpleActivity() {
         }
     }
 
-    private fun setupShowPrivateContacts() {
-        binding.apply {
-            //val simpleDialer = "com.android.dialer"
-            //val simpleDialerDebug = "com.android.dialer.debug"
-            //settings_show_private_contacts_holder.beVisibleIf(isPackageInstalled(simpleDialer) && isPackageInstalled(simpleDialerDebug))
-            settingsShowPrivateContacts.isChecked = config.showPrivateContacts
-            settingsShowPrivateContactsHolder.setOnClickListener {
-                settingsShowPrivateContacts.toggle()
-                config.showPrivateContacts = settingsShowPrivateContacts.isChecked
-            }
-            settingsShowPrivateContactsFaq.imageTintList = ColorStateList.valueOf(getProperTextColor())
-            val faqItems = arrayListOf(
-                FAQItem(com.goodwy.strings.R.string.faq_100_title_commons_g, com.goodwy.strings.R.string.faq_100_text_commons_g),
-                FAQItem(com.goodwy.strings.R.string.faq_101_title_commons_g, com.goodwy.strings.R.string.faq_101_text_commons_g, R.string.phone_storage_hidden),
-            )
-            settingsShowPrivateContactsFaq.setOnClickListener {
-                openFAQ(faqItems)
-            }
-        }
-    }
+//    private fun setupShowPrivateContacts() {
+//        binding.apply {
+//            val simpleDialer = "com.android.dialer"
+//            val simpleDialerDebug = "com.android.dialer.debug"
+//            settings_show_private_contacts_holder.beVisibleIf(isPackageInstalled(simpleDialer) && isPackageInstalled(simpleDialerDebug))
+//            settingsShowPrivateContacts.isChecked = config.showPrivateContacts
+//            settingsShowPrivateContactsHolder.setOnClickListener {
+//                settingsShowPrivateContacts.toggle()
+//                config.showPrivateContacts = settingsShowPrivateContacts.isChecked
+//            }
+//            settingsShowPrivateContactsFaq.imageTintList = ColorStateList.valueOf(getProperTextColor())
+//            val faqItems = arrayListOf(
+//                FAQItem(com.goodwy.strings.R.string.faq_100_title_commons_g, com.goodwy.strings.R.string.faq_100_text_commons_g),
+//                FAQItem(com.goodwy.strings.R.string.faq_101_title_commons_g, com.goodwy.strings.R.string.faq_101_text_commons_g, R.string.phone_storage_hidden),
+//            )
+//            settingsShowPrivateContactsFaq.setOnClickListener {
+//                openFAQ(faqItems)
+//            }
+//        }
+//    }
 
     private fun setupOnContactClick() {
         binding.apply {
@@ -705,77 +694,77 @@ class SettingsActivity : SimpleActivity() {
         }
     }
 
-    private fun setupOverflowIcon() {
-        binding.apply {
-            settingsOverflowIcon.applyColorFilter(getProperTextColor())
-            settingsOverflowIcon.setImageResource(getOverflowIcon(baseConfig.overflowIcon))
-            settingsOverflowIconHolder.setOnClickListener {
-                val items = arrayListOf(
-                    com.goodwy.commons.R.drawable.ic_more_horiz,
-                    com.goodwy.commons.R.drawable.ic_three_dots_vector,
-                    com.goodwy.commons.R.drawable.ic_more_horiz_round
-                )
+//    private fun setupOverflowIcon() {
+//        binding.apply {
+//            settingsOverflowIcon.applyColorFilter(getProperTextColor())
+//            settingsOverflowIcon.setImageResource(getOverflowIcon(baseConfig.overflowIcon))
+//            settingsOverflowIconHolder.setOnClickListener {
+//                val items = arrayListOf(
+//                    com.goodwy.commons.R.drawable.ic_more_horiz,
+//                    com.goodwy.commons.R.drawable.ic_three_dots_vector,
+//                    com.goodwy.commons.R.drawable.ic_more_horiz_round
+//                )
+//
+//                val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+//                    ?: throw IllegalStateException("mainBlurTarget not found")
+//                IconListDialog(
+//                    activity = this@SettingsActivity,
+//                    items = items,
+//                    checkedItemId = baseConfig.overflowIcon + 1,
+//                    defaultItemId = OVERFLOW_ICON_HORIZONTAL + 1,
+//                    titleId = com.goodwy.strings.R.string.overflow_icon,
+//                    size = pixels(com.goodwy.commons.R.dimen.normal_icon_size).toInt(),
+//                    color = getProperTextColor(),
+//                    blurTarget = blurTarget
+//                ) { wasPositivePressed, newValue ->
+//                    if (wasPositivePressed) {
+//                        if (baseConfig.overflowIcon != newValue - 1) {
+//                            baseConfig.overflowIcon = newValue - 1
+//                            settingsOverflowIcon.setImageResource(getOverflowIcon(baseConfig.overflowIcon))
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
 
-                val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
-                    ?: throw IllegalStateException("mainBlurTarget not found")
-                IconListDialog(
-                    activity = this@SettingsActivity,
-                    items = items,
-                    checkedItemId = baseConfig.overflowIcon + 1,
-                    defaultItemId = OVERFLOW_ICON_HORIZONTAL + 1,
-                    titleId = com.goodwy.strings.R.string.overflow_icon,
-                    size = pixels(com.goodwy.commons.R.dimen.normal_icon_size).toInt(),
-                    color = getProperTextColor(),
-                    blurTarget = blurTarget
-                ) { wasPositivePressed, newValue ->
-                    if (wasPositivePressed) {
-                        if (baseConfig.overflowIcon != newValue - 1) {
-                            baseConfig.overflowIcon = newValue - 1
-                            settingsOverflowIcon.setImageResource(getOverflowIcon(baseConfig.overflowIcon))
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private fun setupFloatingButtonStyle() {
-        binding.apply {
-            settingsFloatingButtonStyle.applyColorFilter(getProperTextColor())
-            settingsFloatingButtonStyle.setImageResource(
-                if (baseConfig.materialDesign3) com.goodwy.commons.R.drawable.squircle_bg else com.goodwy.commons.R.drawable.ic_circle_filled
-            )
-            settingsFloatingButtonStyleHolder.setOnClickListener {
-                val items = arrayListOf(
-                    com.goodwy.commons.R.drawable.ic_circle_filled,
-                    com.goodwy.commons.R.drawable.squircle_bg
-                )
-
-                val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
-                    ?: throw IllegalStateException("mainBlurTarget not found")
-                IconListDialog(
-                    activity = this@SettingsActivity,
-                    items = items,
-                    checkedItemId = if (baseConfig.materialDesign3) 2 else 1,
-                    defaultItemId = 1,
-                    titleId = com.goodwy.strings.R.string.floating_button_style,
-                    size = pixels(com.goodwy.commons.R.dimen.normal_icon_size).toInt(),
-                    color = getProperTextColor(),
-                    blurTarget = blurTarget
-                ) { wasPositivePressed, newValue ->
-                    if (wasPositivePressed) {
-                        if (newValue != if (baseConfig.materialDesign3) 2 else 1) {
-                            baseConfig.materialDesign3 = newValue == 2
-                            settingsFloatingButtonStyle.setImageResource(
-                                if (newValue == 2) com.goodwy.commons.R.drawable.squircle_bg else com.goodwy.commons.R.drawable.ic_circle_filled
-                            )
-                            config.needRestart = true
-                        }
-                    }
-                }
-            }
-        }
-    }
+//    private fun setupFloatingButtonStyle() {
+//        binding.apply {
+//            settingsFloatingButtonStyle.applyColorFilter(getProperTextColor())
+//            settingsFloatingButtonStyle.setImageResource(
+//                if (baseConfig.materialDesign3) com.goodwy.commons.R.drawable.squircle_bg else com.goodwy.commons.R.drawable.ic_circle_filled
+//            )
+//            settingsFloatingButtonStyleHolder.setOnClickListener {
+//                val items = arrayListOf(
+//                    com.goodwy.commons.R.drawable.ic_circle_filled,
+//                    com.goodwy.commons.R.drawable.squircle_bg
+//                )
+//
+//                val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+//                    ?: throw IllegalStateException("mainBlurTarget not found")
+//                IconListDialog(
+//                    activity = this@SettingsActivity,
+//                    items = items,
+//                    checkedItemId = if (baseConfig.materialDesign3) 2 else 1,
+//                    defaultItemId = 1,
+//                    titleId = com.goodwy.strings.R.string.floating_button_style,
+//                    size = pixels(com.goodwy.commons.R.dimen.normal_icon_size).toInt(),
+//                    color = getProperTextColor(),
+//                    blurTarget = blurTarget
+//                ) { wasPositivePressed, newValue ->
+//                    if (wasPositivePressed) {
+//                        if (newValue != if (baseConfig.materialDesign3) 2 else 1) {
+//                            baseConfig.materialDesign3 = newValue == 2
+//                            settingsFloatingButtonStyle.setImageResource(
+//                                if (newValue == 2) com.goodwy.commons.R.drawable.squircle_bg else com.goodwy.commons.R.drawable.ic_circle_filled
+//                            )
+//                            config.needRestart = true
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
 
     private fun setupUseIconTabs() {
         binding.apply {
@@ -963,23 +952,6 @@ class SettingsActivity : SimpleActivity() {
                 settingsSkipDeleteConfirmation.toggle()
                 config.skipDeleteConfirmation = settingsSkipDeleteConfirmation.isChecked
             }
-        }
-    }
-
-    private fun setupTipJar() = binding.apply {
-        settingsTipJarHolder.apply {
-            beVisibleIf(isPro())
-            background.applyColorFilter(getColoredMaterialStatusBarColor())
-            setOnClickListener {
-                launchPurchase()
-            }
-        }
-    }
-
-    private fun setupAbout() = binding.apply {
-        settingsAboutVersion.text = "Version: " + BuildConfig.VERSION_NAME
-        settingsAboutHolder.setOnClickListener {
-            launchAbout()
         }
     }
 

@@ -6,15 +6,14 @@ import android.database.Cursor
 import android.database.MatrixCursor
 import android.net.Uri
 import com.google.gson.Gson
-import com.goodwy.commons.helpers.LocalContactsHelper
+import com.goodwy.commons.helpers.SimpleContactsHelper
 import com.goodwy.commons.helpers.MyContactsContentProvider
-import com.android.contacts.extensions.config
 
 class MyContactsContentProvider : ContentProvider() {
     override fun insert(uri: Uri, contentValues: ContentValues?) = null
 
     override fun query(uri: Uri, projection: Array<out String>?, selection: String?, selectionArgs: Array<out String>?, sortOrder: String?): Cursor? {
-        if (context == null || !context!!.config.showPrivateContacts) {
+        if (context == null) {
             return null
         } else {
             val matrixCursor = MatrixCursor(
@@ -34,7 +33,8 @@ class MyContactsContentProvider : ContentProvider() {
             val favoritesOnly = selectionArgs?.getOrNull(0)?.equals("1") ?: false
             val withPhoneNumbersOnly = selectionArgs?.getOrNull(1)?.equals("1") ?: true
 
-            LocalContactsHelper(context!!).getPrivateSimpleContactsSync(favoritesOnly, withPhoneNumbersOnly).forEach {
+            // Use system contacts instead of private contacts
+            SimpleContactsHelper(context!!).getAvailableContactsSync(favoritesOnly, withPhoneNumbersOnly).forEach {
                 val phoneNumbers = Gson().toJson(it.phoneNumbers)
                 val birthdays = Gson().toJson(it.birthdays)
                 val anniversaries = Gson().toJson(it.anniversaries)

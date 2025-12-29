@@ -45,6 +45,10 @@ import com.android.contacts.activities.ViewContactActivity
 import com.android.contacts.dialogs.CreateNewGroupDialog
 import com.android.contacts.extensions.*
 import com.android.contacts.helpers.*
+import com.android.contacts.helpers.VcfExporter
+import com.goodwy.commons.dialogs.FilePickerDialog
+import android.content.ActivityNotFoundException
+import android.app.Activity
 import com.android.contacts.interfaces.RefreshContactsListener
 import com.android.contacts.interfaces.RemoveFromGroupListener
 import me.thanel.swipeactionview.SwipeActionView
@@ -66,6 +70,45 @@ class ContactsAdapter(
     private val enableDrag: Boolean = false,
     itemClick: (Any) -> Unit
 ) : MyRecyclerViewAdapter(activity, recyclerView, itemClick), RecyclerViewFastScroller.OnPopupTextUpdate, ItemTouchHelperContract {
+
+    companion object {
+        const val EXPORT_CONTACTS_REQUEST_CODE = 1001
+        private var pendingExportContacts: ArrayList<Contact>? = null
+
+        fun handleExportResult(activity: SimpleActivity, requestCode: Int, resultCode: Int, resultData: Intent?) {
+            if (requestCode == EXPORT_CONTACTS_REQUEST_CODE && resultCode == Activity.RESULT_OK && resultData?.data != null) {
+                val contacts = pendingExportContacts
+                pendingExportContacts = null
+                if (contacts != null) {
+                    try {
+                        val outputStream = activity.contentResolver.openOutputStream(resultData.data!!)
+                        exportSelectedContactsToVcf(activity, contacts, outputStream)
+                    } catch (e: Exception) {
+                        activity.showErrorToast(e)
+                    }
+                }
+            }
+        }
+
+        private fun exportSelectedContactsToVcf(activity: SimpleActivity, contacts: ArrayList<Contact>, outputStream: java.io.OutputStream?) {
+            VcfExporter().exportContacts(
+                context = activity,
+                outputStream = outputStream,
+                contacts = contacts,
+                showExportingToast = true
+            ) { result: VcfExporter.ExportResult ->
+                activity.runOnUiThread {
+                    activity.toast(
+                        when (result) {
+                            VcfExporter.ExportResult.EXPORT_OK -> com.goodwy.commons.R.string.exporting_successful
+                            VcfExporter.ExportResult.EXPORT_PARTIAL -> com.goodwy.commons.R.string.exporting_some_entries_failed
+                            else -> com.goodwy.commons.R.string.exporting_failed
+                        }
+                    )
+                }
+            }
+        }
+    }
 
     private val NEW_GROUP_ID = -1
 
@@ -149,6 +192,7 @@ class ContactsAdapter(
             R.id.cab_remove -> removeContacts()
             R.id.cab_delete -> askConfirmDelete()
             R.id.cab_move -> moveContacts()
+            R.id.cab_export -> exportContactsToVcf()
         }
     }
 
@@ -383,6 +427,88 @@ class ContactsAdapter(
                         }
                         finishActMode()
                     }
+                }
+            }
+        }
+    }
+
+    private fun exportContactsToVcf() {
+        val selectedContacts = getSelectedItems()
+        if (selectedContacts.isEmpty()) {
+            return
+        }
+
+        val blurTarget = activity.findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+            ?: throw IllegalStateException("mainBlurTarget not found")
+
+        // Generate filename based on selected contacts
+        val filename = if (selectedContacts.size == 1) {
+            selectedContacts.first().getNameToDisplay()
+        } else {
+            "contacts_${getCurrentFormattedDateTime()}"
+        }
+
+        // Store contacts temporarily for activity result handling
+        pendingExportContacts = selectedContacts
+
+        if (isQPlus()) {
+            // Use document picker for Android 10+
+            Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                type = "text/x-vcard"
+                putExtra(Intent.EXTRA_TITLE, "$filename.vcf")
+                addCategory(Intent.CATEGORY_OPENABLE)
+
+                try {
+                    activity.startActivityForResult(this, EXPORT_CONTACTS_REQUEST_CODE)
+                } catch (_: ActivityNotFoundException) {
+                    activity.toast(com.goodwy.commons.R.string.no_app_found, android.widget.Toast.LENGTH_LONG)
+                    pendingExportContacts = null
+                } catch (e: Exception) {
+                    activity.showErrorToast(e)
+                    pendingExportContacts = null
+                }
+            }
+        } else {
+            // Use file picker for older Android versions
+            activity.handlePermission(PERMISSION_WRITE_STORAGE) {
+                if (it) {
+                    val exportPath = activity.config.lastExportPath.ifEmpty { activity.internalStoragePath }
+                    FilePickerDialog(activity, exportPath, false, showFAB = true, blurTarget = blurTarget) { selectedPath ->
+                        val file = java.io.File(selectedPath, "$filename.vcf")
+                        // Create file output stream directly to avoid SAF folder validation
+                        ensureBackgroundThread {
+                            try {
+                                if (file.parentFile?.exists() == false) {
+                                    file.parentFile?.mkdirs()
+                                }
+                                val outputStream = java.io.FileOutputStream(file)
+                                VcfExporter().exportContacts(
+                                    context = activity,
+                                    outputStream = outputStream,
+                                    contacts = selectedContacts,
+                                    showExportingToast = true
+                                ) { result: VcfExporter.ExportResult ->
+                                    activity.runOnUiThread {
+                                        activity.toast(
+                                            when (result) {
+                                                VcfExporter.ExportResult.EXPORT_OK -> com.goodwy.commons.R.string.exporting_successful
+                                                VcfExporter.ExportResult.EXPORT_PARTIAL -> com.goodwy.commons.R.string.exporting_some_entries_failed
+                                                else -> com.goodwy.commons.R.string.exporting_failed
+                                            }
+                                        )
+                                        finishActMode()
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                activity.runOnUiThread {
+                                    activity.showErrorToast(e)
+                                    finishActMode()
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    pendingExportContacts = null
                 }
             }
         }

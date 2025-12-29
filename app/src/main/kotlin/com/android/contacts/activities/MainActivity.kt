@@ -42,6 +42,7 @@ import com.goodwy.commons.views.MySearchMenu
 import com.android.contacts.BuildConfig
 import com.android.contacts.R
 import com.android.contacts.adapters.ViewPagerAdapter
+import com.android.contacts.adapters.ContactsAdapter
 import com.android.contacts.databinding.ActivityMainBinding
 import com.android.contacts.dialogs.ChangeSortingDialog
 import com.android.contacts.dialogs.FilterContactSourcesDialog
@@ -265,6 +266,9 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
                 removeFavorites(removedContacts)
             }
             refreshContacts(TAB_FAVORITES)
+        } else {
+            // Handle export contacts result
+            ContactsAdapter.handleExportResult(this, requestCode, resultCode, resultData)
         }
     }
 

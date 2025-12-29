@@ -664,9 +664,6 @@ open class BaseConfig(val context: Context) {
 
     var showCheckmarksOnSwitchesFlow = ::showCheckmarksOnSwitches.asFlowNonNull()
 
-    var showPrivateContacts: Boolean
-        get() = prefs.getBoolean(SHOW_PRIVATE_CONTACTS, false)
-        set(showPrivateContacts) = prefs.edit { putBoolean(SHOW_PRIVATE_CONTACTS, showPrivateContacts) }
 
     protected fun <T> KProperty0<T>.asFlow(emitOnCollect: Boolean = false): Flow<T?> =
         prefs.run { sharedPreferencesCallback(sendOnCollect = emitOnCollect) { this@asFlow.get() } }

@@ -64,4 +64,9 @@
         android:icon="@drawable/ic_share_vector"
         android:title="@string/move_contacts"
         app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/cab_export"
+        android:icon="@drawable/ic_share_vector"
+        android:title="@string/export_to_vcf"
+        app:showAsAction="ifRoom" />
 </menu>

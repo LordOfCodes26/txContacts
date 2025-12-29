@@ -45,97 +45,105 @@ class SimpleContactsHelper(val context: Context) {
     }
     fun getAvailableContacts(favoritesOnly: Boolean, callback: (ArrayList<SimpleContact>) -> Unit) {
         ensureBackgroundThread {
-            SimpleContact.collator = Collator.getInstance(context.sysLocale())
-            val names = getContactNames(favoritesOnly)
-            var allContacts = getContactPhoneNumbers(favoritesOnly)
-            
-            // Optimize: Use HashMap for O(1) lookup instead of O(n) firstOrNull
-            val namesMap = names.associateBy { it.rawId }
-            allContacts.forEach { contact ->
-                val nameContact = namesMap[contact.rawId]
-                val name = nameContact?.name ?: contact.phoneNumbers.firstOrNull()?.value
-                if (name != null) {
-                    contact.name = name
-                }
-                val photoUri = nameContact?.photoUri
-                if (photoUri != null && photoUri.isNotEmpty()) {
-                    contact.photoUri = photoUri
-                }
+            val contacts = getAvailableContactsSync(favoritesOnly)
+            callback(contacts)
+        }
+    }
+
+    fun getAvailableContactsSync(favoritesOnly: Boolean, withPhoneNumbersOnly: Boolean = true): ArrayList<SimpleContact> {
+        SimpleContact.collator = Collator.getInstance(context.sysLocale())
+        val names = getContactNames(favoritesOnly)
+        var allContacts = getContactPhoneNumbers(favoritesOnly)
+        
+        // Optimize: Use HashMap for O(1) lookup instead of O(n) firstOrNull
+        val namesMap = names.associateBy { it.rawId }
+        allContacts.forEach { contact ->
+            val nameContact = namesMap[contact.rawId]
+            val name = nameContact?.name ?: contact.phoneNumbers.firstOrNull()?.value
+            if (name != null) {
+                contact.name = name
             }
+            val photoUri = nameContact?.photoUri
+            if (photoUri != null && photoUri.isNotEmpty()) {
+                contact.photoUri = photoUri
+            }
+        }
 
-            // Optimize: Combine distinctBy operations and filter in single pass
-            val seenRawIds = HashSet<Int>()
-            val seenNumbers = HashSet<String>()
-            allContacts = allContacts.filter { contact ->
-                if (contact.name.isEmpty()) return@filter false
-                
-                // Check rawId uniqueness
-                if (!seenRawIds.add(contact.rawId)) return@filter false
-                
-                // Check phone number uniqueness (last 9 digits)
-                if (contact.phoneNumbers.isNotEmpty()) {
-                    val normalizedNumber = contact.phoneNumbers.first().normalizedNumber
-                    val startIndex = 0.coerceAtLeast(normalizedNumber.length - 9)
-                    val numberKey = normalizedNumber.substring(startIndex)
-                    if (!seenNumbers.add(numberKey)) return@filter false
-                }
-                
-                true
-            }.toMutableList() as ArrayList<SimpleContact>
+        // Optimize: Combine distinctBy operations and filter in single pass
+        val seenRawIds = HashSet<Int>()
+        val seenNumbers = HashSet<String>()
+        allContacts = allContacts.filter { contact ->
+            if (contact.name.isEmpty()) return@filter false
+            
+            // Filter by phone numbers if required
+            if (withPhoneNumbersOnly && contact.phoneNumbers.isEmpty()) return@filter false
+            
+            // Check rawId uniqueness
+            if (!seenRawIds.add(contact.rawId)) return@filter false
+            
+            // Check phone number uniqueness (last 9 digits)
+            if (contact.phoneNumbers.isNotEmpty()) {
+                val normalizedNumber = contact.phoneNumbers.first().normalizedNumber
+                val startIndex = 0.coerceAtLeast(normalizedNumber.length - 9)
+                val numberKey = normalizedNumber.substring(startIndex)
+                if (!seenNumbers.add(numberKey)) return@filter false
+            }
+            
+            true
+        }.toMutableList() as ArrayList<SimpleContact>
 
-            // Optimize duplicate removal: Use HashMap for O(1) lookup
-            val contactsToRemove = HashSet<Int>()
-            allContacts.groupBy { it.name }.forEach { (_, contacts) ->
-                if (contacts.size > 1) {
-                    val sortedContacts = contacts.sortedByDescending { it.phoneNumbers.size }
-                    if (sortedContacts.any { it.phoneNumbers.size == 1 } && 
-                        sortedContacts.any { it.phoneNumbers.size > 1 }) {
-                        val multipleNumbersContact = sortedContacts.first()
-                        for (i in 1 until sortedContacts.size) {
-                            val contact = sortedContacts[i]
-                            if (contact.phoneNumbers.all { 
-                                multipleNumbersContact.doesContainPhoneNumber(it.normalizedNumber) 
-                            }) {
-                                contactsToRemove.add(contact.rawId)
-                            }
+        // Optimize duplicate removal: Use HashMap for O(1) lookup
+        val contactsToRemove = HashSet<Int>()
+        allContacts.groupBy { it.name }.forEach { (_, contacts) ->
+            if (contacts.size > 1) {
+                val sortedContacts = contacts.sortedByDescending { it.phoneNumbers.size }
+                if (sortedContacts.any { it.phoneNumbers.size == 1 } && 
+                    sortedContacts.any { it.phoneNumbers.size > 1 }) {
+                    val multipleNumbersContact = sortedContacts.first()
+                    for (i in 1 until sortedContacts.size) {
+                        val contact = sortedContacts[i]
+                        if (contact.phoneNumbers.all { 
+                            multipleNumbersContact.doesContainPhoneNumber(it.normalizedNumber) 
+                        }) {
+                            contactsToRemove.add(contact.rawId)
                         }
                     }
                 }
             }
-
-            // Remove duplicates efficiently
-            allContacts.removeAll { it.rawId in contactsToRemove }
-
-            // Optimize: Use HashMap for O(1) lookup instead of O(n) firstOrNull
-            val contactsMap = allContacts.associateBy { it.rawId }
-            
-            val birthdays = getContactEvents(true)
-            val birthdaysSize = birthdays.size
-            for (i in 0 until birthdaysSize) {
-                contactsMap[birthdays.keyAt(i)]?.birthdays = birthdays.valueAt(i)
-            }
-
-            val anniversaries = getContactEvents(false)
-            val anniversariesSize = anniversaries.size
-            for (i in 0 until anniversariesSize) {
-                contactsMap[anniversaries.keyAt(i)]?.anniversaries = anniversaries.valueAt(i)
-            }
-
-            val organizations = getContactOrganization()
-            val organizationsSize = organizations.size
-            for (i in 0 until organizationsSize) {
-                val key = organizations.keyAt(i)
-                val contact = contactsMap[key]
-                if (contact != null) {
-                    val org = organizations.valueAt(i)
-                    contact.company = org.company
-                    contact.jobPosition = org.jobPosition
-                }
-            }
-
-            allContacts.sort()
-            callback(allContacts)
         }
+
+        // Remove duplicates efficiently
+        allContacts.removeAll { it.rawId in contactsToRemove }
+
+        // Optimize: Use HashMap for O(1) lookup instead of O(n) firstOrNull
+        val contactsMap = allContacts.associateBy { it.rawId }
+        
+        val birthdays = getContactEvents(true)
+        val birthdaysSize = birthdays.size
+        for (i in 0 until birthdaysSize) {
+            contactsMap[birthdays.keyAt(i)]?.birthdays = birthdays.valueAt(i)
+        }
+
+        val anniversaries = getContactEvents(false)
+        val anniversariesSize = anniversaries.size
+        for (i in 0 until anniversariesSize) {
+            contactsMap[anniversaries.keyAt(i)]?.anniversaries = anniversaries.valueAt(i)
+        }
+
+        val organizations = getContactOrganization()
+        val organizationsSize = organizations.size
+        for (i in 0 until organizationsSize) {
+            val key = organizations.keyAt(i)
+            val contact = contactsMap[key]
+            if (contact != null) {
+                val org = organizations.valueAt(i)
+                contact.company = org.company
+                contact.jobPosition = org.jobPosition
+            }
+        }
+
+        allContacts.sort()
+        return allContacts
     }
 
     private fun getContactNames(favoritesOnly: Boolean): List<SimpleContact> {
