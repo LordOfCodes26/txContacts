@@ -19,7 +19,10 @@ import com.android.contacts.activities.SimpleActivity
 import com.android.contacts.adapters.ContactsAdapter
 import com.android.contacts.databinding.FragmentFavoritesBinding
 import com.android.contacts.databinding.FragmentLettersLayoutBinding
-import com.android.contacts.dialogs.SelectContactsDialog
+import com.android.contacts.activities.SelectContactsActivity
+import com.android.contacts.extensions.getSelectedContactsResult
+import com.android.contacts.extensions.startSelectContactsActivity
+import com.android.contacts.helpers.REQUEST_CODE_SELECT_CONTACTS
 import com.android.contacts.extensions.config
 import com.android.contacts.helpers.LOCATION_FAVORITES_TAB
 import com.android.contacts.interfaces.RefreshContactsListener
@@ -47,16 +50,12 @@ class FavoritesFragment(context: Context, attributeSet: AttributeSet) : MyViewPa
     private fun getRecyclerAdapter() = innerBinding.fragmentList.adapter as? ContactsAdapter
 
     private fun showAddFavoritesDialog() {
-        val blurTarget = activity!!.findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
-            ?: throw IllegalStateException("mainBlurTarget not found")
-        SelectContactsDialog(activity!!, allContacts, true, false, null, blurTarget) { addedContacts, removedContacts ->
-            ContactsHelper(activity as SimpleActivity).apply {
-                addFavorites(addedContacts)
-                removeFavorites(removedContacts)
-            }
-
-            (activity as? MainActivity)?.refreshContacts(TAB_FAVORITES)
-        }
+        activity?.startSelectContactsActivity(
+            allowSelectMultiple = true,
+            showOnlyContactsWithNumber = false,
+            selectedContacts = null,
+            requestCode = REQUEST_CODE_SELECT_CONTACTS
+        )
     }
 
     fun setupContactsFavoritesAdapter(contacts: List<Contact>) {

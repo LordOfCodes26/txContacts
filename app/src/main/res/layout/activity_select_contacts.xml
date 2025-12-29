@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<eightbitlab.com.blurview.BlurTarget xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/mainBlurTarget"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:id="@+id/select_contacts_coordinator"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <com.goodwy.commons.views.MySearchMenu
+            android:id="@+id/select_contacts_menu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/select_contacts_content"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:scrollbars="none"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <com.goodwy.commons.views.MyRecyclerView
+                    android:id="@+id/select_contact_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:clipToPadding="false"
+                    android:layoutAnimation="@anim/layout_animation"
+                    android:scrollbars="none"
+                    app:layoutManager="com.goodwy.commons.views.MyLinearLayoutManager" />
+
+                <com.goodwy.commons.views.MyTextView
+                    android:id="@+id/select_contact_placeholder"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_centerHorizontal="true"
+                    android:layout_marginTop="@dimen/small_margin"
+                    android:alpha="0.8"
+                    android:gravity="center"
+                    android:paddingStart="@dimen/activity_margin"
+                    android:paddingTop="@dimen/activity_margin"
+                    android:paddingEnd="@dimen/activity_margin"
+                    android:text="@string/no_contacts_found"
+                    android:textSize="@dimen/bigger_text_size"
+                    android:textStyle="italic"
+                    android:visibility="gone" />
+
+                <com.reddit.indicatorfastscroll.FastScrollerView
+                    android:id="@+id/letter_fastscroller"
+                    android:layout_width="32dp"
+                    android:layout_height="match_parent"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:paddingTop="@dimen/bigger_margin"
+                    android:textAppearance="@style/LetterFastscrollerStyleSmall" />
+
+                <com.reddit.indicatorfastscroll.FastScrollerThumbView
+                    android:id="@+id/letter_fastscroller_thumb"
+                    android:layout_width="@dimen/fab_size"
+                    android:layout_height="match_parent"
+                    android:layout_alignTop="@+id/letter_fastscroller"
+                    android:layout_alignBottom="@+id/letter_fastscroller"
+                    android:layout_marginEnd="@dimen/activity_margin"
+                    android:layout_toStartOf="@+id/letter_fastscroller" />
+
+            </RelativeLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+</eightbitlab.com.blurview.BlurTarget>
+

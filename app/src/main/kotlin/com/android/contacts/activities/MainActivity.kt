@@ -46,8 +46,10 @@ import com.android.contacts.databinding.ActivityMainBinding
 import com.android.contacts.dialogs.ChangeSortingDialog
 import com.android.contacts.dialogs.FilterContactSourcesDialog
 import com.android.contacts.extensions.config
+import com.android.contacts.extensions.getSelectedContactsResult
 import com.android.contacts.extensions.handleGenericContactClick
 import com.android.contacts.extensions.launchAbout
+import com.android.contacts.helpers.REQUEST_CODE_SELECT_CONTACTS
 import com.android.contacts.extensions.tryImportContactsFromFile
 import com.android.contacts.fragments.ContactsFragment
 import com.android.contacts.fragments.FavoritesFragment
@@ -256,6 +258,13 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
                     binding.mainMenu.setText(speechToText)
                 }
             }
+        } else if (requestCode == REQUEST_CODE_SELECT_CONTACTS && resultCode == RESULT_OK && resultData != null) {
+            val (addedContacts, removedContacts) = resultData.getSelectedContactsResult()
+            ContactsHelper(this).apply {
+                addFavorites(addedContacts)
+                removeFavorites(removedContacts)
+            }
+            refreshContacts(TAB_FAVORITES)
         }
     }
 

@@ -19,7 +19,10 @@ import com.android.contacts.R
 import com.android.contacts.adapters.ContactsAdapter
 import com.android.contacts.databinding.ActivityGroupContactsBinding
 import com.android.contacts.dialogs.RenameGroupDialog
-import com.android.contacts.dialogs.SelectContactsDialog
+import com.android.contacts.activities.SelectContactsActivity
+import com.android.contacts.extensions.getSelectedContactsResult
+import com.android.contacts.extensions.startSelectContactsActivity
+import com.android.contacts.helpers.REQUEST_CODE_SELECT_CONTACTS
 import com.android.contacts.extensions.handleGenericContactClick
 import com.android.contacts.helpers.GROUP
 import com.android.contacts.helpers.LOCATION_GROUP_CONTACTS
@@ -34,6 +37,7 @@ class GroupContactsActivity : SimpleActivity(), RemoveFromGroupListener, Refresh
     lateinit var group: Group
 
     protected val INTENT_SELECT_RINGTONE = 600
+    private val REQUEST_CODE_SELECT_CONTACTS_FOR_GROUP = 601
 
     protected var contact: Contact? = null
 
@@ -107,26 +111,23 @@ class GroupContactsActivity : SimpleActivity(), RemoveFromGroupListener, Refresh
                     showErrorToast(e)
                 }
             }
-        }
-    }
-
-    private fun fabClicked() {
-        val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
-            ?: throw IllegalStateException("mainBlurTarget not found")
-        SelectContactsDialog(
-            this,
-            allContacts,
-            true,
-            false,
-            groupContacts,
-            blurTarget
-        ) { addedContacts, removedContacts ->
+        } else if (requestCode == REQUEST_CODE_SELECT_CONTACTS_FOR_GROUP && resultCode == Activity.RESULT_OK && resultData != null) {
+            val (addedContacts, removedContacts) = resultData.getSelectedContactsResult()
             ensureBackgroundThread {
                 addContactsToGroup(addedContacts, group.id!!)
                 removeContactsFromGroup(removedContacts, group.id!!)
                 refreshContacts()
             }
         }
+    }
+
+    private fun fabClicked() {
+        startSelectContactsActivity(
+            allowSelectMultiple = true,
+            showOnlyContactsWithNumber = false,
+            selectedContacts = groupContacts,
+            requestCode = REQUEST_CODE_SELECT_CONTACTS_FOR_GROUP
+        )
     }
 
     private fun refreshContacts() {

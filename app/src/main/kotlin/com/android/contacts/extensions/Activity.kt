@@ -21,6 +21,7 @@ import com.goodwy.commons.models.contacts.Contact
 import com.android.contacts.BuildConfig
 import com.android.contacts.R
 import com.android.contacts.activities.EditContactActivity
+import com.android.contacts.activities.SelectContactsActivity
 import com.android.contacts.activities.SimpleActivity
 import com.android.contacts.activities.ViewContactActivity
 import com.android.contacts.dialogs.ImportContactsDialog
@@ -196,6 +197,32 @@ fun Activity.editContact(contact: Contact) {
         putExtra(IS_PRIVATE, contact.isPrivate())
         startActivity(this)
     }
+}
+
+fun Activity.startSelectContactsActivity(
+    allowSelectMultiple: Boolean = true,
+    showOnlyContactsWithNumber: Boolean = false,
+    selectedContacts: ArrayList<Contact>? = null,
+    requestCode: Int? = null
+) {
+    Intent(applicationContext, SelectContactsActivity::class.java).apply {
+        putExtra(SelectContactsActivity.EXTRA_ALLOW_SELECT_MULTIPLE, allowSelectMultiple)
+        putExtra(SelectContactsActivity.EXTRA_SHOW_ONLY_CONTACTS_WITH_NUMBER, showOnlyContactsWithNumber)
+        if (selectedContacts != null) {
+            putExtra(SelectContactsActivity.EXTRA_SELECTED_CONTACTS, selectedContacts)
+        }
+        if (requestCode != null) {
+            startActivityForResult(this, requestCode)
+        } else {
+            startActivity(this)
+        }
+    }
+}
+
+fun Intent.getSelectedContactsResult(): Pair<ArrayList<Contact>, ArrayList<Contact>> {
+    val addedContacts = getSerializableExtra(SelectContactsActivity.RESULT_ADDED_CONTACTS) as? ArrayList<Contact> ?: ArrayList()
+    val removedContacts = getSerializableExtra(SelectContactsActivity.RESULT_REMOVED_CONTACTS) as? ArrayList<Contact> ?: ArrayList()
+    return Pair(addedContacts, removedContacts)
 }
 
 fun SimpleActivity.tryImportContactsFromFile(uri: Uri, callback: (Boolean) -> Unit) {

@@ -49,7 +49,10 @@ import com.android.contacts.databinding.*
 import com.android.contacts.dialogs.CustomLabelDialog
 import com.android.contacts.dialogs.ManageVisibleFieldsDialog
 import com.android.contacts.dialogs.MyDatePickerDialog
-import com.android.contacts.dialogs.SelectContactsDialog
+import com.android.contacts.activities.SelectContactsActivity
+import com.android.contacts.extensions.getSelectedContactsResult
+import com.android.contacts.extensions.startSelectContactsActivity
+import com.android.contacts.helpers.REQUEST_CODE_SELECT_CONTACT_RELATION
 import com.android.contacts.dialogs.SelectGroupsDialog
 import com.android.contacts.extensions.config
 import com.android.contacts.extensions.getCachePhotoUri
@@ -87,6 +90,7 @@ class EditContactActivity : ContactActivity() {
     private var surfaceColor = Color.WHITE
     private val binding by viewBinding(ActivityEditContactBinding::inflate)
     private var allContacts = ArrayList<Contact>()
+    private var currentRelationTextView: android.widget.TextView? = null
 
     enum class PrimaryNumberStatus {
         UNCHANGED, STARRED, UNSTARRED
@@ -169,9 +173,22 @@ class EditContactActivity : ContactActivity() {
             when (requestCode) {
                 INTENT_TAKE_PHOTO, INTENT_CHOOSE_PHOTO -> startCropPhotoIntent(lastPhotoIntentUri, resultData?.data)
                 INTENT_CROP_PHOTO -> updateContactPhoto(lastPhotoIntentUri.toString(), binding.topDetails.contactPhoto, binding.contactPhotoBottomShadow)
+                REQUEST_CODE_SELECT_CONTACT_RELATION -> {
+                    resultData?.let { data ->
+                        val (addedContacts, _) = data.getSelectedContactsResult()
+                        val name = addedContacts.firstOrNull()?.getNameToDisplay()
+                        currentRelationTextView?.let { textView ->
+                            if (name != null) {
+                                textView.setText(name)
+                            }
+                            currentRelationTextView = null
+                        }
+                    }
+                }
             }
         }
     }
+    
 
     private fun initContact() {
         var contactId = intent.getIntExtra(CONTACT_ID, 0)
@@ -946,19 +963,13 @@ class EditContactActivity : ContactActivity() {
                 contactRelationSelectContact.apply {
                     applyColorFilter(getProperTextColor)
                     setOnClickListener {
-                        val blurTarget = findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
-                            ?: throw IllegalStateException("mainBlurTarget not found")
-                        SelectContactsDialog(
-                            this@EditContactActivity,
-                            initialContacts = allContacts,
+                        currentRelationTextView = contactRelation
+                        startSelectContactsActivity(
                             allowSelectMultiple = false,
                             showOnlyContactsWithNumber = false,
-                            selectContacts = null,
-                            blurTarget = blurTarget
-                        ) { addedContacts, _ ->
-                            val name = addedContacts.firstOrNull()?.getNameToDisplay()
-                            if (name != null) contactRelation.setText(name)
-                        }
+                            selectedContacts = null,
+                            requestCode = REQUEST_CODE_SELECT_CONTACT_RELATION
+                        )
                     }
                 }
 
@@ -2079,19 +2090,13 @@ class EditContactActivity : ContactActivity() {
             contactRelationSelectContact.apply {
                 applyColorFilter(getProperTextColor)
                 setOnClickListener {
-                    val blurTarget = findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
-                        ?: throw IllegalStateException("mainBlurTarget not found")
-                    SelectContactsDialog(
-                        this@EditContactActivity,
-                        initialContacts = allContacts,
+                    currentRelationTextView = contactRelation
+                    startSelectContactsActivity(
                         allowSelectMultiple = false,
                         showOnlyContactsWithNumber = false,
-                        selectContacts = null,
-                        blurTarget = blurTarget
-                    ) { addedContacts, _ ->
-                        val name = addedContacts.firstOrNull()?.getNameToDisplay()
-                        if (name != null) contactRelation.setText(name)
-                    }
+                        selectedContacts = null,
+                        requestCode = REQUEST_CODE_SELECT_CONTACT_RELATION
+                    )
                 }
             }
 
