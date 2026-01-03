@@ -169,4 +169,14 @@ dependencies {
     // Circular Countdown
     implementation("com.github.douglasspgyn:CircularCountdown:0.3.0")
     implementation("com.github.Dimezis:BlurView:version-3.2.0")
+
+    // QR Code
+    implementation(libs.zxing.core)
+    implementation(libs.mlkit.barcode)
+    
+    // CameraX
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
 }

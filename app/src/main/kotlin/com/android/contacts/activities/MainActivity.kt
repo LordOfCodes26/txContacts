@@ -299,6 +299,7 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
                     R.id.dialpad -> launchDialpad()
                     R.id.change_view_type -> changeViewType()
                     R.id.column_count -> changeColumnCount()
+                    R.id.scan_qr_code -> launchScanQrCode()
                     R.id.settings -> launchSettings()
 //                    R.id.about -> launchAbout()
                     else -> return@setOnMenuItemClickListener false
@@ -857,6 +858,12 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
         val currentFragment = getCurrentFragment()
         val adapter = currentFragment?.myRecyclerView()?.adapter as? com.goodwy.commons.adapters.MyRecyclerViewAdapter
         adapter?.startActMode()
+    }
+
+    private fun launchScanQrCode() {
+        Intent(this, ScanQrCodeActivity::class.java).apply {
+            startActivity(this)
+        }
     }
 
     private fun launchSettings() {

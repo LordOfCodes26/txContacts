@@ -85,6 +85,12 @@
     <string name="target_contact_source">Target contact source</string>
     <string name="include_contact_sources">Include contact sources</string>
     <string name="filename_without_vcf">Filename (without .vcf)</string>
+    
+    <!-- QR Code -->
+    <string name="show_qr_code">Show QR code</string>
+    <string name="scan_qr_code">Scan QR code</string>
+    <string name="qr_code">QR code</string>
+    <string name="share_qr_code">Share QR code</string>
 
     <!-- Dialpad -->
     <string name="dialpad">Dialpad</string>

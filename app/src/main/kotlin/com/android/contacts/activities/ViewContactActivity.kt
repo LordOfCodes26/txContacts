@@ -186,6 +186,13 @@ class ViewContactActivity : ContactActivity() {
                 true
             }
 
+            findItem(R.id.show_qr_code).setOnMenuItemClickListener {
+                if (fullContact != null) {
+                    showQrCode(fullContact!!)
+                }
+                true
+            }
+
             findItem(R.id.edit).setOnMenuItemClickListener {
                 if (contact != null) {
                     launchEditContact(contact!!, false)
@@ -358,6 +365,12 @@ class ViewContactActivity : ContactActivity() {
             val uri = getContactPublicUri(contact!!)
             launchViewContactIntent(uri)
         }
+    }
+
+    private fun showQrCode(contact: Contact) {
+        val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+            ?: throw IllegalStateException("mainBlurTarget not found")
+        com.android.contacts.dialogs.ShowQrCodeDialog(this, contact, blurTarget)
     }
 
     private fun setupFavorite() {
