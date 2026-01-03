@@ -1930,9 +1930,13 @@ class ContactsHelper(val context: Context) {
     ) {
         ensureBackgroundThread {
             val contacts = SparseArray<Contact>()
-            displayContactSources = context.getVisibleContactSources()
+            // For recents, always include all phone storage and SIM contacts regardless of filter
+            // Get all sources (phone storage and SIM) without applying the current filter
+            val allPhoneAndSimSources = context.getAllContactSources()
+            displayContactSources = allPhoneAndSimSources.map { it.name }.toMutableList() as ArrayList
 
-            getDeviceContactsForRecents(contacts)
+            // Pass empty ignored sources to load all phone storage and SIM contacts for recents
+            getDeviceContactsForRecents(contacts, HashSet())
 
             val contactsSize = contacts.size
             val tempContacts = ArrayList<Contact>(contactsSize)
@@ -1985,12 +1989,12 @@ class ContactsHelper(val context: Context) {
         }
     }
 
-    private fun getDeviceContactsForRecents(contacts: SparseArray<Contact>) {
+    private fun getDeviceContactsForRecents(contacts: SparseArray<Contact>, ignoredSources: HashSet<String>? = null) {
         if (!context.hasPermission(PERMISSION_READ_CONTACTS)) {
             return
         }
 
-        val ignoredSources = context.baseConfig.ignoredContactSources
+        val ignoredSourcesToUse = ignoredSources ?: context.baseConfig.ignoredContactSources
         val uri = Data.CONTENT_URI
         val projection = getContactProjection()
 
@@ -2013,7 +2017,7 @@ class ContactsHelper(val context: Context) {
                 } else {
                     "$accountName:$accountType"
                 }
-                if (ignoredSources.contains(accountIdentifier)) {
+                if (ignoredSourcesToUse.contains(accountIdentifier)) {
                     return@queryCursor
                 }
 
