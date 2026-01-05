@@ -345,13 +345,17 @@ fun String.isEmoji(): Boolean {
 
 fun String.normalizePhoneNumber(): String = PhoneNumberUtils.normalizeNumber(this)
 
-fun String.formatPhoneNumber(minimumLength: Int = 4): String {
-    val country = Locale.getDefault().country
-    return if (this.length >= minimumLength) {
-        PhoneNumberUtils.formatNumber(this, country)?.toString() ?: this
-    } else {
-        this
-    }
+/**
+ * Formats a phone number using customizable formatting logic.
+ * Country detection is disabled - formatting works without country code.
+ * 
+ * @param minimumLength Minimum length required for formatting (default: 4)
+ * @param countryCode Optional country code to use for formatting. If null, formats without country.
+ * @return The formatted phone number, or the original if formatting fails or is not applicable
+ */
+fun String.formatPhoneNumber(minimumLength: Int = 4, countryCode: String? = null): String {
+    val normalizedNumber = this.normalizePhoneNumber()
+    return PhoneNumberFormatManager.formatPhoneNumber(this, normalizedNumber, countryCode, minimumLength)
 }
 
 fun String.highlightTextFromNumbers(textToHighlight: String, primaryColor: Int): SpannableString {

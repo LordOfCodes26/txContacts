@@ -18,6 +18,7 @@ import android.provider.ContactsContract.CommonDataKinds.*
 import android.provider.MediaStore
 import android.telephony.PhoneNumberFormattingTextWatcher
 import android.telephony.PhoneNumberUtils
+import com.goodwy.commons.views.CustomPhoneNumberFormattingTextWatcher
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
@@ -625,7 +626,10 @@ class EditContactActivity : ContactActivity() {
             }
 
             numberHolder.apply {
-                if (config.formatPhoneNumbers) contactNumber.addTextChangedListener(PhoneNumberFormattingTextWatcher(Locale.getDefault().country))
+                if (config.formatPhoneNumbers) {
+                    // Use custom formatter that supports 191-xxx-xxxx and 195-xxx-xxxx patterns
+                    contactNumber.addTextChangedListener(CustomPhoneNumberFormattingTextWatcher())
+                }
                 if (isRTLLayout) numberHolder.contactNumber.gravity = Gravity.END or Gravity.CENTER_VERTICAL
                 contactNumber.setText(number.value)
                 contactNumber.tag = number.normalizedNumber
@@ -1120,7 +1124,10 @@ class EditContactActivity : ContactActivity() {
             }
             numberHolder.dividerVerticalContactNumber.setBackgroundColor(getProperTextColor)
             numberHolder.dividerContactNumber.setBackgroundColor(getProperTextColor)
-            if (config.formatPhoneNumbers) numberHolder.contactNumber.addTextChangedListener(PhoneNumberFormattingTextWatcher(Locale.getDefault().country))
+            if (config.formatPhoneNumbers) {
+                // Use custom formatter that supports 191-xxx-xxxx and 195-xxx-xxxx patterns
+                numberHolder.contactNumber.addTextChangedListener(CustomPhoneNumberFormattingTextWatcher())
+            }
             if (isRTLLayout) numberHolder.contactNumber.gravity = Gravity.END or Gravity.CENTER_VERTICAL
 
             binding.contactNumbersHolder.setBackgroundColor(surfaceColor)
@@ -1822,7 +1829,10 @@ class EditContactActivity : ContactActivity() {
             numberHolder.contactNumber.requestFocus()
             showKeyboard(numberHolder.contactNumber)
         }
-        if (config.formatPhoneNumbers) numberHolder.contactNumber.addTextChangedListener(PhoneNumberFormattingTextWatcher(Locale.getDefault().country))
+        if (config.formatPhoneNumbers) {
+            // Use custom formatter that supports 191-xxx-xxxx and 195-xxx-xxxx patterns
+            numberHolder.contactNumber.addTextChangedListener(CustomPhoneNumberFormattingTextWatcher())
+        }
         if (isRTLLayout) numberHolder.contactNumber.gravity = Gravity.END or Gravity.CENTER_VERTICAL
 
         numberHolder.apply {
