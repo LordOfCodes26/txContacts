@@ -39,6 +39,7 @@ import com.goodwy.commons.models.Release
 import com.goodwy.commons.models.contacts.Contact
 import com.goodwy.commons.views.MyLiquidNavigationView
 import com.goodwy.commons.views.MySearchMenu
+import com.goodwy.commons.views.TwoFingerSlideGestureDetector
 import com.android.contacts.BuildConfig
 import com.android.contacts.R
 import com.android.contacts.adapters.ViewPagerAdapter
@@ -95,6 +96,9 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
     
     // Cached Handler to avoid creating new instances
     private val mainHandler = Handler(Looper.getMainLooper())
+    
+    // Two-finger swipe gesture detector for secure box
+    private lateinit var twoFingerGestureDetector: TwoFingerSlideGestureDetector
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -111,6 +115,40 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
         binding.mainMenu.apply {
             updateTitle(getAppLauncherName())
             searchBeVisibleIf(false) //hide top search bar
+        }
+        
+        // Setup two-finger swipe gesture for secure box
+        setupTwoFingerSwipeGesture()
+    }
+    
+    private fun setupTwoFingerSwipeGesture() {
+        twoFingerGestureDetector = TwoFingerSlideGestureDetector(this,
+            object : TwoFingerSlideGestureDetector.OnTwoFingerSlideGestureListener {
+                override fun onTwoFingerSlide(
+                    firstFingerX: Float,
+                    firstFingerY: Float,
+                    secondFingerX: Float,
+                    secondFingerY: Float,
+                    avgDeltaX: Float,
+                    avgDeltaY: Float,
+                    avgDistance: Float
+                ) {
+                    // Open secure box with cipher number 1
+                    openSecureBox()
+                }
+            }
+        )
+        
+        // Attach gesture detector to the root view
+        binding.root.setOnTouchListener { _, event ->
+            twoFingerGestureDetector.onTouchEvent(event) || false
+        }
+    }
+    
+    private fun openSecureBox() {
+        Intent(this, SecureBoxActivity::class.java).apply {
+            putExtra(SecureBoxActivity.EXTRA_CIPHER_NUMBER, 1)
+            startActivity(this)
         }
     }
 

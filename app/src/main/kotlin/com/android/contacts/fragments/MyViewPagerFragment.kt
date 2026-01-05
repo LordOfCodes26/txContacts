@@ -13,6 +13,7 @@ import com.goodwy.commons.adapters.MyRecyclerViewAdapter
 import com.goodwy.commons.extensions.*
 import com.goodwy.commons.helpers.*
 import com.goodwy.commons.models.contacts.Contact
+import com.goodwy.commons.securebox.SecureBoxHelper
 import com.goodwy.commons.models.contacts.Group
 import com.goodwy.commons.views.MyFloatingActionButton
 import com.goodwy.commons.views.MyRecyclerView
@@ -150,7 +151,16 @@ abstract class MyViewPagerFragment<Binding : MyViewPagerFragment.InnerBinding>(c
 
             else -> {
                 val contactSources = activity!!.getVisibleContactSources()
-                contacts.filter { contactSources.contains(it.source) }
+                val filteredBySource = contacts.filter { contactSources.contains(it.source) }
+                
+                // Filter out secure box contacts when secure box is locked
+                if (!SecureBoxHelper.isSecureBoxUnlocked()) {
+                    val secureBoxHelper = SecureBoxHelper(activity!!)
+                    val secureBoxContactIds = secureBoxHelper.getSecureBoxContactIds()
+                    filteredBySource.filter { !secureBoxContactIds.contains(it.id) }.toList()
+                } else {
+                    filteredBySource
+                }
             }
         }
 
