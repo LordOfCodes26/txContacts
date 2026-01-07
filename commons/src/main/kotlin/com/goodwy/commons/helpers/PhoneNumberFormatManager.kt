@@ -9,6 +9,11 @@ import java.util.Locale
  * Manager class for phone number formatting.
  * Country detection is disabled by default - formatting works without country code.
  * Provides default implementations and allows customization via interfaces.
+ * 
+ * To use database-based formatting (from phone_number_formats table):
+ * ```kotlin
+ * PhoneNumberFormatManager.customFormatter = DatabasePhoneNumberFormatter(context)
+ * ```
  */
 object PhoneNumberFormatManager {
     /**
@@ -19,6 +24,11 @@ object PhoneNumberFormatManager {
 
     /**
      * Custom phone number formatter. If null, uses default formatting logic without country detection.
+     * 
+     * To enable database-based formatting:
+     * ```kotlin
+     * PhoneNumberFormatManager.customFormatter = DatabasePhoneNumberFormatter(context)
+     * ```
      */
     var customFormatter: PhoneNumberFormatter? = null
 
