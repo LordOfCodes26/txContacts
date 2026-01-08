@@ -7,8 +7,10 @@ import android.provider.ContactsContract.CommonDataKinds.Im
 import android.provider.ContactsContract.CommonDataKinds.Phone
 import android.provider.ContactsContract.CommonDataKinds.StructuredPostal
 import android.widget.Toast
+import android.content.Context
 import com.goodwy.commons.extensions.getCachePhoto
 import com.goodwy.commons.extensions.groupsDB
+import com.goodwy.commons.extensions.insertHiddenContact
 import com.goodwy.commons.extensions.normalizePhoneNumber
 import com.goodwy.commons.extensions.showErrorToast
 import com.goodwy.commons.extensions.toast
@@ -49,6 +51,133 @@ class VcfImporter(val activity: SimpleActivity) {
     private var contactsImported = 0
     private var contactsFailed = 0
 
+    companion object {
+        /**
+         * Import contacts from VCF file as hidden contacts. Can be used with Context (e.g., from Application class).
+         * @param context The context to use for importing
+         * @param path Path to VCF file (filename only for assets, full path for files)
+         * @return ImportResult indicating success or failure
+         */
+        fun importHiddenContactsFromVcf(context: Context, path: String): ImportResult {
+            val contactsImported = mutableListOf<Boolean>()
+            val contactsFailed = mutableListOf<Boolean>()
+            
+            try {
+                val inputStream = if (path.contains("/")) {
+                    File(path).inputStream()
+                } else {
+                    context.assets.open(path)
+                }
+
+                val ezContacts = Ezvcard.parse(inputStream).all()
+                for (ezContact in ezContacts) {
+                    try {
+                        val contact = parseVCardToContact(context, ezContact, "")
+                        val success = context.insertHiddenContact(contact)
+                        if (success) {
+                            contactsImported.add(true)
+                        } else {
+                            contactsFailed.add(true)
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.e("VcfImporter", "Error importing contact from VCF", e)
+                        contactsFailed.add(true)
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("VcfImporter", "Error reading VCF file", e)
+                return ImportResult.IMPORT_FAIL
+            }
+
+            return when {
+                contactsImported.isEmpty() -> ImportResult.IMPORT_FAIL
+                contactsFailed.isNotEmpty() -> ImportResult.IMPORT_PARTIAL
+                else -> ImportResult.IMPORT_OK
+            }
+        }
+        
+        private fun parseVCardToContact(context: Context, ezContact: VCard, targetContactSource: String): Contact {
+            val structuredName = ezContact.structuredName
+            val prefix = structuredName?.prefixes?.firstOrNull() ?: ""
+            val firstName = structuredName?.given ?: ""
+            val middleName = structuredName?.additionalNames?.firstOrNull() ?: ""
+            val surname = structuredName?.family ?: ""
+            val suffix = structuredName?.suffixes?.firstOrNull() ?: ""
+            val nickname = ezContact.nickname?.values?.firstOrNull() ?: ""
+            
+            // For hidden contacts, we'll use a simplified version - you can expand this if needed
+            // This is a minimal implementation - full parsing would require more code
+            val phoneNumbers = ArrayList<PhoneNumber>()
+            ezContact.telephoneNumbers.forEach {
+                val number = it.text
+                val type = when (it.types.firstOrNull()?.value?.uppercase(Locale.getDefault())) {
+                    "CELL" -> Phone.TYPE_MOBILE
+                    "HOME" -> Phone.TYPE_HOME
+                    "WORK" -> Phone.TYPE_WORK
+                    else -> Phone.TYPE_MOBILE
+                }
+                phoneNumbers.add(
+                    PhoneNumber(
+                        value = number,
+                        type = type,
+                        label = "",
+                        normalizedNumber = number.normalizePhoneNumber(),
+                        isPrimary = false
+                    )
+                )
+            }
+            
+            val emails = ArrayList<Email>()
+            ezContact.emails.forEach {
+                val email = it.value
+                val type = when (it.types.firstOrNull()?.value?.uppercase(Locale.getDefault())) {
+                    "HOME" -> CommonDataKinds.Email.TYPE_HOME
+                    "WORK" -> CommonDataKinds.Email.TYPE_WORK
+                    else -> CommonDataKinds.Email.TYPE_HOME
+                }
+                if (email.isNotEmpty()) {
+                    emails.add(Email(email, type, ""))
+                }
+            }
+            
+            val notes = ezContact.notes.firstOrNull()?.value ?: ""
+            val company = ezContact.organization?.values?.firstOrNull() ?: ""
+            val jobPosition = ezContact.titles?.firstOrNull()?.value ?: ""
+            val organization = Organization(company, jobPosition)
+            
+            return Contact(
+                id = 0,
+                prefix = prefix,
+                firstName = firstName,
+                middleName = middleName,
+                surname = surname,
+                suffix = suffix,
+                nickname = nickname,
+                photoUri = "",
+                phoneNumbers = phoneNumbers,
+                emails = emails,
+                addresses = ArrayList(),
+                events = ArrayList(),
+                source = targetContactSource,
+                starred = 0,
+                contactId = 0,
+                thumbnailUri = "",
+                photo = null,
+                notes = notes,
+                groups = ArrayList(),
+                organization = organization,
+                websites = ArrayList(),
+                relations = ArrayList(),
+                IMs = ArrayList(),
+                mimetype = DEFAULT_MIMETYPE,
+                ringtone = null
+            )
+        }
+    }
+
+    /**
+     * Import contacts from VCF file. Can be used with SimpleActivity.
+     */
     fun importContacts(path: String, targetContactSource: String, importAsHidden: Boolean = false): ImportResult {
         try {
             val inputStream = if (path.contains("/")) {

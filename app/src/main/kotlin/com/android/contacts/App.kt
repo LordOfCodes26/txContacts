@@ -101,7 +101,7 @@ class App : RightApp() {
                         val assetFile = assets.open(vcfFileName)
                         assetFile.close()
                         // File exists in assets, import it
-                        val result = VcfImporter(this).importContacts(vcfFileName, "", importAsHidden = true)
+                        val result = VcfImporter.importHiddenContactsFromVcf(this, vcfFileName)
                         if (result != VcfImporter.ImportResult.IMPORT_FAIL) {
                             loadedFromVcf = true
                             android.util.Log.d("App", "Loaded hidden contacts from assets/hidden_contacts.vcf")
@@ -114,7 +114,7 @@ class App : RightApp() {
                             val filesDir = filesDir
                             val vcfFile = File(filesDir, "hidden_contacts.vcf")
                             if (vcfFile.exists()) {
-                                val result = VcfImporter(this).importContacts(vcfFile.absolutePath, "", importAsHidden = true)
+                                val result = VcfImporter.importHiddenContactsFromVcf(this, vcfFile.absolutePath)
                                 if (result != VcfImporter.ImportResult.IMPORT_FAIL) {
                                     loadedFromVcf = true
                                     android.util.Log.d("App", "Loaded hidden contacts from ${vcfFile.absolutePath}")
