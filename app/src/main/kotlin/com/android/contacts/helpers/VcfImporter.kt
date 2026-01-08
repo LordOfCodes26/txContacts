@@ -49,7 +49,7 @@ class VcfImporter(val activity: SimpleActivity) {
     private var contactsImported = 0
     private var contactsFailed = 0
 
-    fun importContacts(path: String, targetContactSource: String): ImportResult {
+    fun importContacts(path: String, targetContactSource: String, importAsHidden: Boolean = false): ImportResult {
         try {
             val inputStream = if (path.contains("/")) {
                 File(path).inputStream()
@@ -339,8 +339,16 @@ class VcfImporter(val activity: SimpleActivity) {
                     contact.mimetype = CommonDataKinds.Organization.CONTENT_ITEM_TYPE
                 }
 
-                if (ContactsHelper(activity).insertContact(contact)) {
+                val success = if (importAsHidden) {
+                    activity.insertHiddenContact(contact)
+                } else {
+                    ContactsHelper(activity).insertContact(contact)
+                }
+                
+                if (success) {
                     contactsImported++
+                } else {
+                    contactsFailed++
                 }
             }
         } catch (e: Exception) {

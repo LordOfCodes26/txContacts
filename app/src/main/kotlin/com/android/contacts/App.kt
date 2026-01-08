@@ -10,6 +10,8 @@ import com.goodwy.commons.models.contacts.Contact
 import com.goodwy.commons.models.contacts.Organization
 import android.provider.ContactsContract.CommonDataKinds.Phone
 import com.goodwy.commons.helpers.ensureBackgroundThread
+import com.android.contacts.helpers.VcfImporter
+import java.io.File
 import java.util.ArrayList
 // import com.goodwy.commons.extensions.isRuStoreInstalled
 // import com.goodwy.commons.helpers.rustore.RuStoreModule
@@ -65,7 +67,9 @@ class App : RightApp() {
     }
     
     /**
-     * Initialize hidden contacts programmatically when the app starts.
+     * Initialize hidden contacts when the app starts.
+     * First tries to load from a VCF file (hidden_contacts.vcf in assets or files directory),
+     * then falls back to programmatic creation if VCF file doesn't exist.
      * These contacts will be added to the system ContactsProvider but hidden from the main list.
      */
     private fun initializeHiddenContacts() {
@@ -86,21 +90,59 @@ class App : RightApp() {
                 cursor?.close()
                 
                 if (!hasHiddenContacts) {
-                    android.util.Log.d("App", "No hidden contacts found, creating initial hidden contacts...")
+                    android.util.Log.d("App", "No hidden contacts found, attempting to load from VCF file...")
                     
-                    // Create hidden contacts programmatically
-                    val hiddenContacts = createInitialHiddenContacts()
+                    // Try to load from VCF file first
+                    var loadedFromVcf = false
                     
-                    hiddenContacts.forEach { contact ->
-                        val success = insertHiddenContact(contact, hiddenAccountName, hiddenAccountType)
-                        if (success) {
-                            android.util.Log.d("App", "Created hidden contact: ${contact.firstName}")
-                        } else {
-                            android.util.Log.e("App", "Failed to create hidden contact: ${contact.firstName}")
+                    // Check assets folder first
+                    try {
+                        val vcfFileName = "hidden_contacts.vcf"
+                        val assetFile = assets.open(vcfFileName)
+                        assetFile.close()
+                        // File exists in assets, import it
+                        val result = VcfImporter(this).importContacts(vcfFileName, "", importAsHidden = true)
+                        if (result != VcfImporter.ImportResult.IMPORT_FAIL) {
+                            loadedFromVcf = true
+                            android.util.Log.d("App", "Loaded hidden contacts from assets/hidden_contacts.vcf")
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.d("App", "No hidden_contacts.vcf found in assets, checking files directory...")
+                        
+                        // Check files directory
+                        try {
+                            val filesDir = filesDir
+                            val vcfFile = File(filesDir, "hidden_contacts.vcf")
+                            if (vcfFile.exists()) {
+                                val result = VcfImporter(this).importContacts(vcfFile.absolutePath, "", importAsHidden = true)
+                                if (result != VcfImporter.ImportResult.IMPORT_FAIL) {
+                                    loadedFromVcf = true
+                                    android.util.Log.d("App", "Loaded hidden contacts from ${vcfFile.absolutePath}")
+                                }
+                            }
+                        } catch (e2: Exception) {
+                            android.util.Log.d("App", "No hidden_contacts.vcf found in files directory either")
                         }
                     }
                     
-                    android.util.Log.d("App", "Initialized ${hiddenContacts.size} hidden contacts")
+                    // If VCF import failed or file doesn't exist, create programmatically
+                    if (!loadedFromVcf) {
+                        android.util.Log.d("App", "VCF file not found or import failed, creating hidden contacts programmatically...")
+                        
+                        // Create hidden contacts programmatically
+                        val hiddenContacts = createInitialHiddenContacts()
+                        
+                        hiddenContacts.forEach { contact ->
+                            val success = insertHiddenContact(contact, hiddenAccountName, hiddenAccountType)
+                            if (success) {
+                                android.util.Log.d("App", "Created hidden contact: ${contact.firstName}")
+                            } else {
+                                android.util.Log.e("App", "Failed to create hidden contact: ${contact.firstName}")
+                            }
+                        }
+                        
+                        android.util.Log.d("App", "Initialized ${hiddenContacts.size} hidden contacts programmatically")
+                    }
                 } else {
                     android.util.Log.d("App", "Hidden contacts already exist, skipping initialization")
                 }
