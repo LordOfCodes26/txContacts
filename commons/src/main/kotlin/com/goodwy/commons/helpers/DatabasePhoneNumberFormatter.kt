@@ -40,7 +40,6 @@ class DatabasePhoneNumberFormatter(
      */
     private fun getFormats(): List<PhoneNumberFormat> {
         if (formatsCacheInitialized && cachedFormats != null) {
-            android.util.Log.d("DatabasePhoneNumberFormatter", "Using cached formats: ${cachedFormats!!.size} formats")
             return cachedFormats!!
         }
         
@@ -55,14 +54,12 @@ class DatabasePhoneNumberFormatter(
             if (formats.isNotEmpty()) {
                 // Log first few formats for debugging
                 formats.take(5).forEach { format ->
-                    android.util.Log.d("DatabasePhoneNumberFormatter", "Format: prefix=${format.prefix}, pattern=${format.districtCodePattern}, template=${format.formatTemplate}, districtLength=${format.districtCodeLength}")
+                    android.util.Log.d("DatabasePhoneNumberFormatter", "Format: prefix=${format.prefix}, pattern=${format.districtCodePattern}, template=${format.formatTemplate}")
                 }
                 cachedFormats = formats
                 formatsCacheInitialized = true
             } else {
                 android.util.Log.w("DatabasePhoneNumberFormatter", "No formats found in database - formats may not be loaded yet")
-                // Don't cache empty list - allow retry on next call
-                formatsCacheInitialized = false
             }
             
             formats
@@ -90,10 +87,8 @@ class DatabasePhoneNumberFormatter(
         // Try database-based formatting first
         return try {
             val allFormats = getFormats()
-            android.util.Log.d("DatabasePhoneNumberFormatter", "Formatting: phoneNumber=$phoneNumber, normalizedNumber=$normalizedNumber, formatsCount=${allFormats.size}")
             if (allFormats.isEmpty()) {
                 // No formats in database or cache, fall back to default
-                android.util.Log.w("DatabasePhoneNumberFormatter", "No formats available, falling back to default formatter")
                 // Try to load formats in background for next time
                 if (!formatsCacheInitialized) {
                     com.goodwy.commons.helpers.ensureBackgroundThread {
@@ -128,7 +123,6 @@ class DatabasePhoneNumberFormatter(
                 // Need at least prefix + district code, and ideally enough for NUMBER4 (4 digits)
                 val minRequiredLength = format.prefixLength + format.districtCodeLength
                 if (normalizedNumber.length < minRequiredLength) {
-                    android.util.Log.d("DatabasePhoneNumberFormatter", "Skipping format ${format.prefix}-${format.districtCodePattern}: number too short (${normalizedNumber.length} < $minRequiredLength)")
                     continue
                 }
                 
@@ -137,7 +131,6 @@ class DatabasePhoneNumberFormatter(
                 
                 // Check if prefix matches (exact match or "all")
                 if (format.prefix != "all" && prefix != format.prefix) {
-                    android.util.Log.d("DatabasePhoneNumberFormatter", "Skipping format ${format.prefix}-${format.districtCodePattern}: prefix mismatch (extracted=$prefix, expected=${format.prefix})")
                     continue
                 }
                 
@@ -149,7 +142,7 @@ class DatabasePhoneNumberFormatter(
                 
                 // Check if district code matches the pattern
                 val patternMatches = PhoneNumberFormatHelper.matchesPattern(districtCode, format.districtCodePattern)
-                android.util.Log.d("DatabasePhoneNumberFormatter", "Trying format: prefix=${format.prefix}, pattern=${format.districtCodePattern}, extracted prefix=$prefix, district=$districtCode, matches=$patternMatches")
+                android.util.Log.v("DatabasePhoneNumberFormatter", "Trying format: prefix=${format.prefix}, pattern=${format.districtCodePattern}, extracted prefix=$prefix, district=$districtCode, matches=$patternMatches")
                 
                 if (patternMatches) {
                     matchedFormat = format

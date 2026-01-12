@@ -154,7 +154,7 @@ fun String.getImageResolution(context: Context): Point? {
     if (context.isRestrictedSAFOnlyRoot(this)) {
         BitmapFactory.decodeStream(context.contentResolver.openInputStream(context.getAndroidSAFUri(this)), null, options)
     } else {
-    BitmapFactory.decodeFile(this, options)
+        BitmapFactory.decodeFile(this, options)
     }
 
     val width = options.outWidth
