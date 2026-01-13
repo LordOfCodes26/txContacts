@@ -314,7 +314,7 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
         val currentFragment = getCurrentFragment()
         val groupsFragment = getGroupsFragment()
         val favoritesFragment = getFavoritesFragment()
-        binding.mainMenu.requireToolbar().menu.apply {
+        binding.mainMenu.requireCustomToolbar().menu.apply {
             findItem(R.id.search).isVisible = /*!config.bottomNavigationBar*/ true
             findItem(R.id.sort).isVisible = currentFragment != groupsFragment
             findItem(R.id.filter).isVisible = currentFragment != groupsFragment
@@ -323,13 +323,15 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
             findItem(R.id.change_view_type).isVisible = currentFragment == favoritesFragment
             findItem(R.id.column_count).isVisible = currentFragment == favoritesFragment && config.viewType == VIEW_TYPE_GRID
         }
+        // Update menu button visibility after changing menu item visibility
+        binding.mainMenu.requireCustomToolbar().invalidateMenu()
     }
 
     private fun setupOptionsMenu() {
         binding.mainMenu.apply {
-            requireToolbar().inflateMenu(R.menu.menu)
-            setupSearch(requireToolbar().menu)
-            requireToolbar().setOnMenuItemClickListener { menuItem ->
+            requireCustomToolbar().inflateMenu(R.menu.menu)
+            setupSearch(requireCustomToolbar().menu)
+            requireCustomToolbar().setOnMenuItemClickListener { menuItem ->
                 when (menuItem.itemId) {
                     R.id.sort -> showSortingDialog(showCustomSorting = getCurrentFragment() is FavoritesFragment)
                     R.id.filter -> showFilterDialog()
@@ -344,6 +346,8 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
                 }
                 return@setOnMenuItemClickListener true
             }
+            // Invalidate menu to ensure menu button visibility is updated
+            requireCustomToolbar().invalidateMenu()
         }
     }
 
@@ -386,7 +390,18 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
         updateMenuItemColors(menu)
         val searchManager = getSystemService(SEARCH_SERVICE) as SearchManager
         mSearchMenuItem = menu.findItem(R.id.search)
-        mSearchView = (mSearchMenuItem!!.actionView as SearchView).apply {
+        var actionView = mSearchMenuItem!!.actionView
+        if (actionView == null) {
+            actionView = MenuItemCompat.getActionView(mSearchMenuItem!!)
+        }
+        if (actionView == null) {
+            // If actionView is still null, create it manually
+            val searchView = SearchView(this)
+            MenuItemCompat.setActionView(mSearchMenuItem!!, searchView)
+            actionView = searchView
+        }
+        mSearchView = (actionView as? SearchView) ?: throw IllegalStateException("SearchView actionView could not be created")
+        mSearchView.apply {
             val textColor = getProperTextColor()
             // Cache small padding calculation
             val smallPadding = resources.getDimensionPixelSize(com.goodwy.commons.R.dimen.small_margin)
@@ -436,7 +451,7 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
                 mSearchView?.let { searchView ->
                     searchView.post {
                         // Get the parent toolbar width for smooth slide-in
-                        val toolbar = binding.mainMenu.requireToolbar()
+                        val toolbar = binding.mainMenu.requireCustomToolbar()
                         val slideDistance = toolbar.width.toFloat()
 
                         // Start from right side
@@ -465,7 +480,7 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
 
                 // Animate search bar disappearance with smooth translation (slide out to right)
                 mSearchView?.let { searchView ->
-                    val toolbar = binding.mainMenu.requireToolbar()
+                    val toolbar = binding.mainMenu.requireCustomToolbar()
                     val slideDistance = toolbar.width.toFloat()
 
                     searchView.animate()

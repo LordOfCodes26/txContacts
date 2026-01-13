@@ -570,6 +570,16 @@ class CustomToolbar @JvmOverloads constructor(
         
         binding?.menuButton?.visibility = if (hasVisibleItems) View.VISIBLE else View.GONE
         
+        // Set default overflow icon if menu button is visible and no icon is set
+        if (hasVisibleItems && binding?.menuButton?.drawable == null) {
+            val overflowIcon = ContextCompat.getDrawable(context, R.drawable.ic_three_dots_vector)
+            overflowIcon?.let {
+                val textColor = context.getProperTextColor()
+                it.applyColorFilter(textColor)
+                binding?.menuButton?.setImageDrawable(it)
+            }
+        }
+        
         // Keep menu button visible even when search is expanded
     }
     

@@ -32,16 +32,13 @@ class App : RightApp() {
             android.util.Log.d("App", "Phone number formats check: hasFormats=$hasFormats")
             if (!hasFormats) {
                 try {
-                    // Access commons resources by creating a context for the commons package
-                    val commonsContext = createPackageContext("com.goodwy.commons", 0)
-                    val commonsFormatHelper = PhonePrefixLocationHelper(commonsContext)
-                    // Both helpers use the same database (via applicationContext), so formats loaded
-                    // with commons context will be accessible to formatter using app context
-                    val resourceId = commonsContext.resources.getIdentifier("phone_number_formats", "raw", "com.goodwy.commons")
+                    // Access commons resources directly from app context (resources are merged at build time)
+                    // The resource from commons module is accessible via the app's merged resources
+                    val resourceId = resources.getIdentifier("phone_number_formats", "raw", "com.goodwy.commons")
                     
                     android.util.Log.d("App", "Phone number formats resource ID: $resourceId")
                     if (resourceId != 0) {
-                        commonsFormatHelper.loadFormatsFromRaw(resourceId) { count ->
+                        formatHelper.loadFormatsFromRaw(resourceId) { count ->
                             android.util.Log.d("App", "Loaded $count phone number formats from JSON")
                             // Invalidate formatter cache so it picks up the newly loaded formats
                             // Note: PhonePrefixLocationHelper.loadFormatsFromRaw already tries to invalidate,

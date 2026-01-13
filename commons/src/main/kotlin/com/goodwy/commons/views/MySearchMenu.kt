@@ -177,5 +177,11 @@ open class MySearchMenu(context: Context, attrs: AttributeSet) : MyAppBarLayout(
         openSearch()
     }
 
-    override fun requireToolbar(): MaterialToolbar = toolbar ?: error("MySearchMenu requires a Toolbar")
+    override fun requireToolbar(): MaterialToolbar {
+        // Check if CustomToolbar is available and provide helpful error message
+        if (customToolbar != null) {
+            error("MySearchMenu uses CustomToolbar instead of MaterialToolbar. Use requireCustomToolbar() instead of requireToolbar()")
+        }
+        return toolbar ?: error("MySearchMenu requires a Toolbar")
+    }
 }
