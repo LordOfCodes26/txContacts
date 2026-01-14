@@ -2,6 +2,7 @@ package com.android.contacts.activities
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
@@ -52,13 +53,19 @@ class ScanQrCodeActivity : SimpleActivity() {
     }
 
     private fun setupToolbar() {
-        binding.toolbar.apply {
-            setNavigationIcon(com.goodwy.commons.R.drawable.ic_arrow_left_vector)
-            setNavigationIconTint(getProperTextColor())
-            setNavigationOnClickListener { finish() }
-            title = getString(R.string.scan_qr_code)
-            setTitleColor(getProperTextColor())
-        }
+//        binding.appbar.setBackgroundColor(Color.TRANSPARENT)
+//        binding.toolbar.apply {
+//            val textColor = getProperTextColor()
+//            navigationIcon = resources.getColoredDrawableWithColor(
+//                this@ScanQrCodeActivity,
+//                com.goodwy.commons.R.drawable.ic_arrow_left_vector,
+//                textColor
+//            )
+//            setNavigationOnClickListener { finish() }
+//            title = getString(R.string.scan_qr_code)
+//            setTitleTextColor(textColor)
+//            setSearchIconVisible(false)
+//        }
     }
 
     private fun checkCameraPermission(): Boolean {

@@ -595,7 +595,7 @@ open class BaseConfig(val context: Context) {
         set(lastUsedContactSource) = prefs.edit { putString(LAST_USED_CONTACT_SOURCE, lastUsedContactSource) }
 
     var onContactClick: Int
-        get() = prefs.getInt(ON_CONTACT_CLICK, 0)
+        get() = prefs.getInt(ON_CONTACT_CLICK, 1)
         set(onContactClick) = prefs.edit { putInt(ON_CONTACT_CLICK, onContactClick) }
 
     var showContactFields: Int

@@ -2,12 +2,20 @@ package com.android.contacts.activities
 
 import android.content.Intent
 import android.content.res.Configuration
+import android.content.res.TypedArray
 import android.os.Bundle
 import android.util.Log
+import android.util.TypedValue
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
+import android.widget.ImageButton
+import android.widget.ImageView
+import android.widget.RelativeLayout
 import androidx.appcompat.widget.SearchView
+import androidx.core.content.ContextCompat
 import androidx.core.view.MenuItemCompat
 import com.reddit.indicatorfastscroll.FastScrollItemIndicator
 import com.goodwy.commons.extensions.*
@@ -206,9 +214,24 @@ class SelectContactsActivity : SimpleActivity() {
     private fun setupOptionsMenu() {
         binding.selectContactsMenu.apply {
             requireCustomToolbar().inflateMenu(R.menu.menu_select_contacts)
-            requireCustomToolbar().menu.findItem(R.id.done)?.isVisible = allowSelectMultiple
-            setupSearch(requireCustomToolbar().menu)
+            val menu = requireCustomToolbar().menu
+            
+            // Hide all menu items from the overflow menu since we're using action buttons
+            menu.findItem(R.id.done)?.isVisible = false
+            menu.findItem(R.id.select_all)?.isVisible = false
+            menu.findItem(R.id.deselect_all)?.isVisible = false
+            
+            setupSearch(menu)
+            
+            // Hide the menu button (overflow menu) by setting overflowIcon to null
+            requireCustomToolbar().overflowIcon = null
+            
+            // Setup action buttons directly in toolbar
+            setupActionButtons()
+            
+            // Update action buttons visibility
             updateMenuItems()
+            
             requireCustomToolbar().setOnMenuItemClickListener { menuItem ->
                 when (menuItem.itemId) {
                     R.id.done -> {
@@ -227,6 +250,90 @@ class SelectContactsActivity : SimpleActivity() {
                 }
             }
         }
+    }
+    
+    private var doneButton: ImageButton? = null
+    private var selectAllButton: ImageButton? = null
+    
+    private fun setupActionButtons() {
+        val toolbar = binding.selectContactsMenu.requireCustomToolbar()
+        val toolbarRoot = toolbar.getChildAt(0) as? ViewGroup ?: return
+        val relativeLayout = toolbarRoot.getChildAt(0) as? RelativeLayout ?: return
+        val activityContext = this@SelectContactsActivity
+        
+        // Find the search icon button to position our buttons next to it
+        val searchIconButton = toolbarRoot.findViewById<ImageView>(com.goodwy.commons.R.id.searchIconButton)
+        val iconSize = resources.getDimensionPixelSize(com.goodwy.commons.R.dimen.medium_icon_size)
+        val smallerMargin = resources.getDimensionPixelSize(com.goodwy.commons.R.dimen.smaller_margin)
+        
+        // Create select all button (positioned to the left of search icon)
+        selectAllButton = ImageButton(activityContext).apply {
+            id = View.generateViewId()
+            layoutParams = RelativeLayout.LayoutParams(iconSize, iconSize).apply {
+                if (searchIconButton != null) {
+                    addRule(RelativeLayout.LEFT_OF, searchIconButton.id)
+                } else {
+                    addRule(RelativeLayout.ALIGN_PARENT_END)
+                }
+                addRule(RelativeLayout.CENTER_VERTICAL)
+                marginEnd = smallerMargin
+            }
+            scaleType = ImageView.ScaleType.CENTER_INSIDE
+            adjustViewBounds = true
+            val typedValue = TypedValue()
+            activityContext.theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, typedValue, true)
+            background = ContextCompat.getDrawable(activityContext, typedValue.resourceId)
+            isClickable = true
+            isFocusable = true
+            
+            val selectAllIcon = ContextCompat.getDrawable(activityContext, com.goodwy.commons.R.drawable.ic_select_all_vector)
+            selectAllIcon?.let {
+                val textColor = activityContext.getProperTextColor()
+                it.applyColorFilter(textColor)
+                setImageDrawable(it)
+            }
+            
+            contentDescription = activityContext.getString(com.goodwy.commons.R.string.select_all)
+            
+            setOnClickListener {
+                activityContext.selectAll()
+            }
+        }
+        
+        // Create done/confirm button (positioned to the left of select all button)
+        doneButton = ImageButton(activityContext).apply {
+            id = View.generateViewId()
+            layoutParams = RelativeLayout.LayoutParams(iconSize, iconSize).apply {
+                addRule(RelativeLayout.LEFT_OF, selectAllButton!!.id)
+                addRule(RelativeLayout.CENTER_VERTICAL)
+                marginEnd = smallerMargin
+            }
+            scaleType = ImageView.ScaleType.CENTER_INSIDE
+            adjustViewBounds = true
+            val typedValue = TypedValue()
+            activityContext.theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, typedValue, true)
+            background = ContextCompat.getDrawable(activityContext, typedValue.resourceId)
+            isClickable = true
+            isFocusable = true
+            
+            val doneIcon = ContextCompat.getDrawable(activityContext, com.goodwy.commons.R.drawable.ic_check_vector)
+            doneIcon?.let {
+                val textColor = activityContext.getProperTextColor()
+                it.applyColorFilter(textColor)
+                setImageDrawable(it)
+            }
+            
+            contentDescription = activityContext.getString(com.goodwy.commons.R.string.ok)
+            visibility = if (allowSelectMultiple) View.VISIBLE else View.GONE
+            
+            setOnClickListener {
+                activityContext.confirmSelection()
+            }
+        }
+        
+        // Add buttons to toolbar (done button first, then select all)
+        relativeLayout.addView(doneButton)
+        relativeLayout.addView(selectAllButton)
     }
 
     private fun setupSearch(menu: Menu) {
@@ -322,12 +429,41 @@ class SelectContactsActivity : SimpleActivity() {
     }
     
     private fun updateMenuItems() {
-        binding.selectContactsMenu.requireCustomToolbar().menu.apply {
-            val allSelected = selectedContacts.size == allContacts.size && allContacts.isNotEmpty()
-            val noneSelected = selectedContacts.isEmpty()
-            
-            findItem(R.id.select_all)?.isVisible = allowSelectMultiple && !allSelected && allContacts.isNotEmpty()
-            findItem(R.id.deselect_all)?.isVisible = allowSelectMultiple && !noneSelected
+        val allSelected = selectedContacts.size == allContacts.size && allContacts.isNotEmpty()
+        val noneSelected = selectedContacts.isEmpty()
+        
+        // Update select all button visibility and behavior
+        selectAllButton?.visibility = if (allowSelectMultiple && allContacts.isNotEmpty()) {
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
+        
+        // Toggle select all button behavior based on selection state
+        if (allSelected && selectAllButton != null) {
+            // When all are selected, button acts as "deselect all"
+            val deselectIcon = ContextCompat.getDrawable(this, com.goodwy.commons.R.drawable.ic_select_all_vector)
+            deselectIcon?.let {
+                val textColor = getProperTextColor()
+                it.applyColorFilter(textColor)
+                selectAllButton?.setImageDrawable(it)
+            }
+            selectAllButton?.setOnClickListener {
+                deselectAll()
+            }
+            selectAllButton?.contentDescription = getString(R.string.deselect_all)
+        } else if (selectAllButton != null) {
+            // When not all are selected, button acts as "select all"
+            val selectIcon = ContextCompat.getDrawable(this, com.goodwy.commons.R.drawable.ic_select_all_vector)
+            selectIcon?.let {
+                val textColor = getProperTextColor()
+                it.applyColorFilter(textColor)
+                selectAllButton?.setImageDrawable(it)
+            }
+            selectAllButton?.setOnClickListener {
+                selectAll()
+            }
+            selectAllButton?.contentDescription = getString(com.goodwy.commons.R.string.select_all)
         }
     }
     
