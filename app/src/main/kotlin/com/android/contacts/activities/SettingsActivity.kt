@@ -78,34 +78,34 @@ class SettingsActivity : SimpleActivity() {
         setupTopAppBar(binding.settingsAppbar, NavigationIcon.Arrow, topBarColor = properBackgroundColor)
 
 //        setupCustomizeColors()
-        setupShowDialpadButton()
+//        setupShowDialpadButton()
 //        setupOverflowIcon()
 //        setupFloatingButtonStyle()
-        setupUseColoredContacts()
-        setupContactsColorList()
+//        setupUseColoredContacts()
+//        setupContactsColorList()
 
-        setupManageShownContactFields()
+//        setupManageShownContactFields()
         setupMergeDuplicateContacts()
-        setupShowCallConfirmation()
+//        setupShowCallConfirmation()
 //        setupShowPrivateContacts()
         setupOnContactClick()
         setupShowContactsWithNumbers()
-        setupFormatPhoneNumbers()
-        setupFontSize()
-        setupUseEnglish()
-        setupLanguage()
+//        setupFormatPhoneNumbers()
+//        setupFontSize()
+//        setupUseEnglish()
+//        setupLanguage()
 
-        setupDefaultTab()
-        setupManageShownTabs()
-        setupNavigationBarStyle()
-        setupUseIconTabs()
-        setupScreenSlideAnimation()
-        setupOpenSearch()
-        setupEndSearch()
+//        setupDefaultTab()
+//        setupManageShownTabs()
+//        setupNavigationBarStyle()
+//        setupUseIconTabs()
+//        setupScreenSlideAnimation()
+//        setupOpenSearch()
+//        setupEndSearch()
 
         setupUseSwipeToAction()
         setupSwipeVibration()
-        setupSwipeRipple()
+//        setupSwipeRipple()
         setupSwipeRightAction()
         setupSwipeLeftAction()
         setupDeleteConfirmation()
@@ -124,9 +124,9 @@ class SettingsActivity : SimpleActivity() {
         updateTextColors(binding.settingsHolder)
 
         arrayOf(
-            binding.settingsAppearanceLabel,
+//            binding.settingsAppearanceLabel,
             binding.settingsGeneralLabel,
-            binding.settingsTabsLabel,
+//            binding.settingsTabsLabel,
             binding.settingsSwipeGesturesLabel,
             binding.settingsListViewLabel,
             binding.settingsBackupsLabel).forEach {
@@ -134,9 +134,9 @@ class SettingsActivity : SimpleActivity() {
         }
 
         arrayOf(
-            binding.settingsColorCustomizationHolder,
+//            binding.settingsColorCustomizationHolder,
             binding.settingsGeneralHolder,
-            binding.settingsTabsHolder,
+//            binding.settingsTabsHolder,
             binding.settingsSwipeGesturesHolder,
             binding.settingsListViewHolder,
             binding.settingsBackupsHolder,
@@ -145,9 +145,9 @@ class SettingsActivity : SimpleActivity() {
         }
 
         arrayOf(
-            binding.settingsManageShownTabsChevron,
-            binding.settingsManageContactFieldsChevron,
-            binding.settingsManageContactFieldsChevron,
+//            binding.settingsManageShownTabsChevron,
+//            binding.settingsManageContactFieldsChevron,
+//            binding.settingsManageContactFieldsChevron,
             binding.contactsImportChevron,
             binding.contactsExportChevron,
             binding.settingsManageAutomaticBackupsChevron,
@@ -172,78 +172,78 @@ class SettingsActivity : SimpleActivity() {
 //        }
 //    }
 
-    private fun setupManageShownContactFields() {
-        binding.settingsManageContactFieldsHolder.setOnClickListener {
-            val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
-                ?: throw IllegalStateException("mainBlurTarget not found")
-            ManageVisibleFieldsDialog(this, blurTarget) {}
-        }
-    }
+//    private fun setupManageShownContactFields() {
+//        binding.settingsManageContactFieldsHolder.setOnClickListener {
+//            val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+//                ?: throw IllegalStateException("mainBlurTarget not found")
+//            ManageVisibleFieldsDialog(this, blurTarget) {}
+//        }
+//    }
 
-    private fun setupManageShownTabs() {
-        binding.settingsManageShownTabsHolder.setOnClickListener {
-            val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
-                ?: throw IllegalStateException("mainBlurTarget not found")
-            ManageVisibleTabsDialog(this, blurTarget)
-        }
-    }
+//    private fun setupManageShownTabs() {
+//        binding.settingsManageShownTabsHolder.setOnClickListener {
+//            val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+//                ?: throw IllegalStateException("mainBlurTarget not found")
+//            ManageVisibleTabsDialog(this, blurTarget)
+//        }
+//    }
 
-    private fun setupScreenSlideAnimation() {
-        binding.settingsScreenSlideAnimation.text = getScreenSlideAnimationText()
-        binding.settingsScreenSlideAnimationHolder.setOnClickListener {
-            val items = arrayListOf(
-                RadioItem(0, getString(com.goodwy.commons.R.string.no), icon = com.goodwy.commons.R.drawable.ic_view_array),
-                RadioItem(1, getString(com.goodwy.strings.R.string.screen_slide_animation_zoomout), icon = com.goodwy.commons.R.drawable.ic_view_carousel),
-                RadioItem(2, getString(com.goodwy.strings.R.string.screen_slide_animation_depth), icon = com.goodwy.commons.R.drawable.ic_playing_cards),
-            )
-
-            val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
-                ?: throw IllegalStateException("mainBlurTarget not found")
-            RadioGroupIconDialog(this@SettingsActivity, items, config.screenSlideAnimation, com.goodwy.strings.R.string.screen_slide_animation, blurTarget = blurTarget) {
-                config.screenSlideAnimation = it as Int
-                config.needRestart = true
-                binding.settingsScreenSlideAnimation.text = getScreenSlideAnimationText()
-            }
-        }
-    }
-
-    private fun setupOpenSearch() {
-        binding.apply {
-            settingsOpenSearch.isChecked = config.openSearch
-            settingsOpenSearchHolder.setOnClickListener {
-                settingsOpenSearch.toggle()
-                config.openSearch = settingsOpenSearch.isChecked
-            }
-        }
-    }
-
-    private fun setupEndSearch() {
-        binding.apply {
-            settingsEndSearch.isChecked = config.closeSearch
-            settingsEndSearchHolder.setOnClickListener {
-                settingsEndSearch.toggle()
-                config.closeSearch = settingsEndSearch.isChecked
-            }
-        }
-    }
-
-    private fun setupDefaultTab() {
-        binding.settingsDefaultTab.text = getDefaultTabText()
-        binding.settingsDefaultTabHolder.setOnClickListener {
-            val items = arrayListOf(
-                RadioItem(TAB_LAST_USED, getString(com.goodwy.commons.R.string.last_used_tab)),
-                RadioItem(TAB_FAVORITES, getString(com.goodwy.commons.R.string.favorites_tab), icon = R.drawable.ic_star_vector_scaled),
-                RadioItem(TAB_CONTACTS, getString(com.goodwy.commons.R.string.contacts_tab), icon = R.drawable.ic_person_rounded_scaled),
-                RadioItem(TAB_GROUPS, getString(com.goodwy.commons.R.string.groups_tab), icon = R.drawable.ic_people_rounded))
-
-            val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
-                ?: throw IllegalStateException("mainBlurTarget not found")
-            RadioGroupIconDialog(this@SettingsActivity, items, config.defaultTab, com.goodwy.strings.R.string.default_tab, blurTarget = blurTarget) {
-                config.defaultTab = it as Int
-                binding.settingsDefaultTab.text = getDefaultTabText()
-            }
-        }
-    }
+//    private fun setupScreenSlideAnimation() {
+//        binding.settingsScreenSlideAnimation.text = getScreenSlideAnimationText()
+//        binding.settingsScreenSlideAnimationHolder.setOnClickListener {
+//            val items = arrayListOf(
+//                RadioItem(0, getString(com.goodwy.commons.R.string.no), icon = com.goodwy.commons.R.drawable.ic_view_array),
+//                RadioItem(1, getString(com.goodwy.strings.R.string.screen_slide_animation_zoomout), icon = com.goodwy.commons.R.drawable.ic_view_carousel),
+//                RadioItem(2, getString(com.goodwy.strings.R.string.screen_slide_animation_depth), icon = com.goodwy.commons.R.drawable.ic_playing_cards),
+//            )
+//
+//            val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+//                ?: throw IllegalStateException("mainBlurTarget not found")
+//            RadioGroupIconDialog(this@SettingsActivity, items, config.screenSlideAnimation, com.goodwy.strings.R.string.screen_slide_animation, blurTarget = blurTarget) {
+//                config.screenSlideAnimation = it as Int
+//                config.needRestart = true
+//                binding.settingsScreenSlideAnimation.text = getScreenSlideAnimationText()
+//            }
+//        }
+//    }
+//
+//    private fun setupOpenSearch() {
+//        binding.apply {
+//            settingsOpenSearch.isChecked = config.openSearch
+//            settingsOpenSearchHolder.setOnClickListener {
+//                settingsOpenSearch.toggle()
+//                config.openSearch = settingsOpenSearch.isChecked
+//            }
+//        }
+//    }
+//
+//    private fun setupEndSearch() {
+//        binding.apply {
+//            settingsEndSearch.isChecked = config.closeSearch
+//            settingsEndSearchHolder.setOnClickListener {
+//                settingsEndSearch.toggle()
+//                config.closeSearch = settingsEndSearch.isChecked
+//            }
+//        }
+//    }
+//
+//    private fun setupDefaultTab() {
+//        binding.settingsDefaultTab.text = getDefaultTabText()
+//        binding.settingsDefaultTabHolder.setOnClickListener {
+//            val items = arrayListOf(
+//                RadioItem(TAB_LAST_USED, getString(com.goodwy.commons.R.string.last_used_tab)),
+//                RadioItem(TAB_FAVORITES, getString(com.goodwy.commons.R.string.favorites_tab), icon = R.drawable.ic_star_vector_scaled),
+//                RadioItem(TAB_CONTACTS, getString(com.goodwy.commons.R.string.contacts_tab), icon = R.drawable.ic_person_rounded_scaled),
+//                RadioItem(TAB_GROUPS, getString(com.goodwy.commons.R.string.groups_tab), icon = R.drawable.ic_people_rounded))
+//
+//            val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+//                ?: throw IllegalStateException("mainBlurTarget not found")
+//            RadioGroupIconDialog(this@SettingsActivity, items, config.defaultTab, com.goodwy.strings.R.string.default_tab, blurTarget = blurTarget) {
+//                config.defaultTab = it as Int
+//                binding.settingsDefaultTab.text = getDefaultTabText()
+//            }
+//        }
+//    }
 
     private fun getDefaultTabText() = getString(
         when (baseConfig.defaultTab) {
@@ -254,62 +254,62 @@ class SettingsActivity : SimpleActivity() {
         }
     )
 
-    private fun setupNavigationBarStyle() {
-        binding.settingsNavigationBarStyle.text = getNavigationBarStyleText()
-        binding.settingsNavigationBarStyleHolder.setOnClickListener {
-            val items = arrayListOf(
-                RadioItem(0, getString(com.goodwy.strings.R.string.top), icon = com.goodwy.commons.R.drawable.ic_tab_top),
-                RadioItem(1, getString(com.goodwy.strings.R.string.bottom), icon = com.goodwy.commons.R.drawable.ic_tab_bottom),
-            )
+//    private fun setupNavigationBarStyle() {
+//        binding.settingsNavigationBarStyle.text = getNavigationBarStyleText()
+//        binding.settingsNavigationBarStyleHolder.setOnClickListener {
+//            val items = arrayListOf(
+//                RadioItem(0, getString(com.goodwy.strings.R.string.top), icon = com.goodwy.commons.R.drawable.ic_tab_top),
+//                RadioItem(1, getString(com.goodwy.strings.R.string.bottom), icon = com.goodwy.commons.R.drawable.ic_tab_bottom),
+//            )
+//
+//            val checkedItemId = if (config.bottomNavigationBar) 1 else 0
+//            val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+//                ?: throw IllegalStateException("mainBlurTarget not found")
+//            RadioGroupIconDialog(this@SettingsActivity, items, checkedItemId, com.goodwy.strings.R.string.tab_navigation, blurTarget = blurTarget) {
+//                config.bottomNavigationBar = it == 1
+//                config.needRestart = true
+//                binding.settingsNavigationBarStyle.text = getNavigationBarStyleText()
+////                binding.settingsChangeColourTopBarHolder.beVisibleIf(config.bottomNavigationBar)
+//            }
+//        }
+//    }
 
-            val checkedItemId = if (config.bottomNavigationBar) 1 else 0
-            val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
-                ?: throw IllegalStateException("mainBlurTarget not found")
-            RadioGroupIconDialog(this@SettingsActivity, items, checkedItemId, com.goodwy.strings.R.string.tab_navigation, blurTarget = blurTarget) {
-                config.bottomNavigationBar = it == 1
-                config.needRestart = true
-                binding.settingsNavigationBarStyle.text = getNavigationBarStyleText()
-//                binding.settingsChangeColourTopBarHolder.beVisibleIf(config.bottomNavigationBar)
-            }
-        }
-    }
+//    private fun setupFontSize() {
+//        binding.settingsFontSize.text = getFontSizeText()
+//        binding.settingsFontSizeHolder.setOnClickListener {
+//            val items = arrayListOf(
+//                RadioItem(FONT_SIZE_SMALL, getString(com.goodwy.commons.R.string.small)),
+//                RadioItem(FONT_SIZE_MEDIUM, getString(com.goodwy.commons.R.string.medium)),
+//                RadioItem(FONT_SIZE_LARGE, getString(com.goodwy.commons.R.string.large)),
+//                RadioItem(FONT_SIZE_EXTRA_LARGE, getString(com.goodwy.commons.R.string.extra_large)))
+//
+//            val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+//                ?: throw IllegalStateException("mainBlurTarget not found")
+//            RadioGroupDialog(this@SettingsActivity, items, config.fontSize, com.goodwy.commons.R.string.font_size, blurTarget = blurTarget) {
+//                config.fontSize = it as Int
+//                binding.settingsFontSize.text = getFontSizeText()
+//                config.needRestart = true
+//            }
+//        }
+//    }
 
-    private fun setupFontSize() {
-        binding.settingsFontSize.text = getFontSizeText()
-        binding.settingsFontSizeHolder.setOnClickListener {
-            val items = arrayListOf(
-                RadioItem(FONT_SIZE_SMALL, getString(com.goodwy.commons.R.string.small)),
-                RadioItem(FONT_SIZE_MEDIUM, getString(com.goodwy.commons.R.string.medium)),
-                RadioItem(FONT_SIZE_LARGE, getString(com.goodwy.commons.R.string.large)),
-                RadioItem(FONT_SIZE_EXTRA_LARGE, getString(com.goodwy.commons.R.string.extra_large)))
+//    private fun setupUseEnglish() = binding.apply {
+//        settingsUseEnglishHolder.beVisibleIf((config.wasUseEnglishToggled || Locale.getDefault().language != "en") && !isTiramisuPlus())
+//        settingsUseEnglish.isChecked = config.useEnglish
+//        settingsUseEnglishHolder.setOnClickListener {
+//            settingsUseEnglish.toggle()
+//            config.useEnglish = settingsUseEnglish.isChecked
+//            exitProcess(0)
+//        }
+//    }
 
-            val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
-                ?: throw IllegalStateException("mainBlurTarget not found")
-            RadioGroupDialog(this@SettingsActivity, items, config.fontSize, com.goodwy.commons.R.string.font_size, blurTarget = blurTarget) {
-                config.fontSize = it as Int
-                binding.settingsFontSize.text = getFontSizeText()
-                config.needRestart = true
-            }
-        }
-    }
-
-    private fun setupUseEnglish() = binding.apply {
-        settingsUseEnglishHolder.beVisibleIf((config.wasUseEnglishToggled || Locale.getDefault().language != "en") && !isTiramisuPlus())
-        settingsUseEnglish.isChecked = config.useEnglish
-        settingsUseEnglishHolder.setOnClickListener {
-            settingsUseEnglish.toggle()
-            config.useEnglish = settingsUseEnglish.isChecked
-            exitProcess(0)
-        }
-    }
-
-    private fun setupLanguage() = binding.apply {
-        settingsLanguage.text = Locale.getDefault().displayLanguage
-        settingsLanguageHolder.beVisibleIf(isTiramisuPlus())
-        settingsLanguageHolder.setOnClickListener {
-            if (isTiramisuPlus()) launchChangeAppLanguageIntent()
-        }
-    }
+//    private fun setupLanguage() = binding.apply {
+//        settingsLanguage.text = Locale.getDefault().displayLanguage
+//        settingsLanguageHolder.beVisibleIf(isTiramisuPlus())
+//        settingsLanguageHolder.setOnClickListener {
+//            if (isTiramisuPlus()) launchChangeAppLanguageIntent()
+//        }
+//    }
 
     private fun setupShowContactThumbnails() {
         binding.apply {
@@ -373,14 +373,14 @@ class SettingsActivity : SimpleActivity() {
         }
     }
 
-    private fun setupFormatPhoneNumbers() {
-        binding.settingsFormatPhoneNumbers.isChecked = config.formatPhoneNumbers
-        binding.settingsFormatPhoneNumbersHolder.setOnClickListener {
-            binding.settingsFormatPhoneNumbers.toggle()
-            config.formatPhoneNumbers = binding.settingsFormatPhoneNumbers.isChecked
-            config.needRestart = true
-        }
-    }
+//    private fun setupFormatPhoneNumbers() {
+//        binding.settingsFormatPhoneNumbers.isChecked = config.formatPhoneNumbers
+//        binding.settingsFormatPhoneNumbersHolder.setOnClickListener {
+//            binding.settingsFormatPhoneNumbers.toggle()
+//            config.formatPhoneNumbers = binding.settingsFormatPhoneNumbers.isChecked
+//            config.needRestart = true
+//        }
+//    }
 
     private fun setupShowContactsWithNumbers() {
         binding.apply {
@@ -425,16 +425,16 @@ class SettingsActivity : SimpleActivity() {
 //        }
 //    }
 
-    private fun setupShowDialpadButton() {
-        binding.apply {
-            settingsShowDialpadButton.isChecked = config.showDialpadButton
-            settingsShowDialpadButtonHolder.setOnClickListener {
-                settingsShowDialpadButton.toggle()
-                config.showDialpadButton = settingsShowDialpadButton.isChecked
-            }
-        }
-    }
-
+//    private fun setupShowDialpadButton() {
+//        binding.apply {
+//            settingsShowDialpadButton.isChecked = config.showDialpadButton
+//            settingsShowDialpadButtonHolder.setOnClickListener {
+//                settingsShowDialpadButton.toggle()
+//                config.showDialpadButton = settingsShowDialpadButton.isChecked
+//            }
+//        }
+//    }
+//
 //    private fun setupShowPrivateContacts() {
 //        binding.apply {
 //            val simpleDialer = "com.android.dialer"
@@ -484,15 +484,15 @@ class SettingsActivity : SimpleActivity() {
         }
     )
 
-    private fun setupShowCallConfirmation() {
-        binding.apply {
-            settingsShowCallConfirmation.isChecked = config.showCallConfirmation
-            settingsShowCallConfirmationHolder.setOnClickListener {
-                settingsShowCallConfirmation.toggle()
-                config.showCallConfirmation = settingsShowCallConfirmation.isChecked
-            }
-        }
-    }
+//    private fun setupShowCallConfirmation() {
+//        binding.apply {
+//            settingsShowCallConfirmation.isChecked = config.showCallConfirmation
+//            settingsShowCallConfirmationHolder.setOnClickListener {
+//                settingsShowCallConfirmation.toggle()
+//                config.showCallConfirmation = settingsShowCallConfirmation.isChecked
+//            }
+//        }
+//    }
 
     private fun setupMergeDuplicateContacts() {
         binding.apply {
@@ -766,16 +766,16 @@ class SettingsActivity : SimpleActivity() {
 //        }
 //    }
 
-    private fun setupUseIconTabs() {
-        binding.apply {
-            settingsUseIconTabs.isChecked = config.useIconTabs
-            settingsUseIconTabsHolder.setOnClickListener {
-                settingsUseIconTabs.toggle()
-                config.useIconTabs = settingsUseIconTabs.isChecked
-                config.needRestart = true
-            }
-        }
-    }
+//    private fun setupUseIconTabs() {
+//        binding.apply {
+//            settingsUseIconTabs.isChecked = config.useIconTabs
+//            settingsUseIconTabsHolder.setOnClickListener {
+//                settingsUseIconTabs.toggle()
+//                config.useIconTabs = settingsUseIconTabs.isChecked
+//                config.needRestart = true
+//            }
+//        }
+//    }
 
     private fun setupShowDividers() {
         binding.apply {
@@ -787,46 +787,46 @@ class SettingsActivity : SimpleActivity() {
         }
     }
 
-    private fun setupUseColoredContacts() = binding.apply {
-            settingsColoredContacts.isChecked = config.useColoredContacts
-            settingsColoredContactsHolder.setOnClickListener {
-                settingsColoredContacts.toggle()
-                config.useColoredContacts = settingsColoredContacts.isChecked
-                settingsContactColorListHolder.beVisibleIf(config.useColoredContacts)
-            }
-    }
+//    private fun setupUseColoredContacts() = binding.apply {
+//            settingsColoredContacts.isChecked = config.useColoredContacts
+//            settingsColoredContactsHolder.setOnClickListener {
+//                settingsColoredContacts.toggle()
+//                config.useColoredContacts = settingsColoredContacts.isChecked
+//                settingsContactColorListHolder.beVisibleIf(config.useColoredContacts)
+//            }
+//    }
 
-    private fun setupContactsColorList() = binding.apply {
-        settingsContactColorListHolder.beVisibleIf(config.useColoredContacts)
-        settingsContactColorListIcon.setImageResource(getContactsColorListIcon(config.contactColorList))
-        settingsContactColorListHolder.setOnClickListener {
-            val items = arrayListOf(
-                com.goodwy.commons.R.drawable.ic_color_list,
-                com.goodwy.commons.R.drawable.ic_color_list_android,
-                com.goodwy.commons.R.drawable.ic_color_list_ios,
-                com.goodwy.commons.R.drawable.ic_color_list_arc
-            )
-
-            val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
-                ?: throw IllegalStateException("mainBlurTarget not found")
-            IconListDialog(
-                activity = this@SettingsActivity,
-                items = items,
-                checkedItemId = config.contactColorList,
-                defaultItemId = LBC_ANDROID,
-                titleId = com.goodwy.strings.R.string.overflow_icon,
-                blurTarget = blurTarget
-            ) { wasPositivePressed, newValue ->
-                if (wasPositivePressed) {
-                    if (config.contactColorList != newValue) {
-                        config.contactColorList = newValue
-                        settingsContactColorListIcon.setImageResource(getContactsColorListIcon(config.contactColorList))
-                        config.needRestart = true
-                    }
-                }
-            }
-        }
-    }
+//    private fun setupContactsColorList() = binding.apply {
+//        settingsContactColorListHolder.beVisibleIf(config.useColoredContacts)
+//        settingsContactColorListIcon.setImageResource(getContactsColorListIcon(config.contactColorList))
+//        settingsContactColorListHolder.setOnClickListener {
+//            val items = arrayListOf(
+//                com.goodwy.commons.R.drawable.ic_color_list,
+//                com.goodwy.commons.R.drawable.ic_color_list_android,
+//                com.goodwy.commons.R.drawable.ic_color_list_ios,
+//                com.goodwy.commons.R.drawable.ic_color_list_arc
+//            )
+//
+//            val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+//                ?: throw IllegalStateException("mainBlurTarget not found")
+//            IconListDialog(
+//                activity = this@SettingsActivity,
+//                items = items,
+//                checkedItemId = config.contactColorList,
+//                defaultItemId = LBC_ANDROID,
+//                titleId = com.goodwy.strings.R.string.overflow_icon,
+//                blurTarget = blurTarget
+//            ) { wasPositivePressed, newValue ->
+//                if (wasPositivePressed) {
+//                    if (config.contactColorList != newValue) {
+//                        config.contactColorList = newValue
+//                        settingsContactColorListIcon.setImageResource(getContactsColorListIcon(config.contactColorList))
+//                        config.needRestart = true
+//                    }
+//                }
+//            }
+//        }
+//    }
 
     private fun setupUseSwipeToAction() {
         updateSwipeToActionVisible()
@@ -844,7 +844,7 @@ class SettingsActivity : SimpleActivity() {
     private fun updateSwipeToActionVisible() {
         binding.apply {
             settingsSwipeVibrationHolder.beVisibleIf(config.useSwipeToAction)
-            settingsSwipeRippleHolder.beVisibleIf(config.useSwipeToAction)
+//            settingsSwipeRippleHolder.beVisibleIf(config.useSwipeToAction)
             settingsSwipeRightActionHolder.beVisibleIf(config.useSwipeToAction)
             settingsSwipeLeftActionHolder.beVisibleIf(config.useSwipeToAction)
             settingsSkipDeleteConfirmationHolder.beVisibleIf(config.useSwipeToAction &&(config.swipeLeftAction == SWIPE_ACTION_DELETE || config.swipeRightAction == SWIPE_ACTION_DELETE))
@@ -862,16 +862,16 @@ class SettingsActivity : SimpleActivity() {
         }
     }
 
-    private fun setupSwipeRipple() {
-        binding.apply {
-            settingsSwipeRipple.isChecked = config.swipeRipple
-            settingsSwipeRippleHolder.setOnClickListener {
-                settingsSwipeRipple.toggle()
-                config.swipeRipple = settingsSwipeRipple.isChecked
-                config.needRestart = true
-            }
-        }
-    }
+//    private fun setupSwipeRipple() {
+//        binding.apply {
+//            settingsSwipeRipple.isChecked = config.swipeRipple
+//            settingsSwipeRippleHolder.setOnClickListener {
+//                settingsSwipeRipple.toggle()
+//                config.swipeRipple = settingsSwipeRipple.isChecked
+//                config.needRestart = true
+//            }
+//        }
+//    }
 
     private fun setupSwipeRightAction() = binding.apply {
         if (isRTLLayout) settingsSwipeRightActionLabel.text = getString(com.goodwy.strings.R.string.swipe_left_action)

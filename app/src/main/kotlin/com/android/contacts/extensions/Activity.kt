@@ -303,7 +303,7 @@ fun SimpleActivity.launchAbout() {
         subscriptionIdListRu = arrayListOf(subscriptionIdX1, subscriptionIdX2, subscriptionIdX3),
         subscriptionYearIdList = arrayListOf(subscriptionYearIdX1, subscriptionYearIdX2, subscriptionYearIdX3),
         subscriptionYearIdListRu = arrayListOf(subscriptionYearIdX1, subscriptionYearIdX2, subscriptionYearIdX3),
-        flavorName = BuildConfig.FLAVOR
+        flavorName = ""
     )
 }
 

@@ -530,7 +530,7 @@ open class BaseConfig(val context: Context) {
     val isBlockingHiddenNumbers: Flow<Boolean> = ::blockHiddenNumbers.asFlowNonNull()
 
     var fontSize: Int
-        get() = prefs.getInt(FONT_SIZE, 1) //context.resources.getInteger(R.integer.default_font_size)
+        get() = prefs.getInt(FONT_SIZE, 0) //context.resources.getInteger(R.integer.default_font_size)
         set(fontSize) = prefs.edit { putInt(FONT_SIZE, fontSize) }
 
     // notify the users about new SMS Messenger and Voice Recorder released
@@ -608,7 +608,7 @@ open class BaseConfig(val context: Context) {
         set(showContactFields) = prefs.edit { putInt(SHOW_CONTACT_FIELDS, showContactFields) }
 
     var showDialpadButton: Boolean
-        get() = prefs.getBoolean(SHOW_DIALPAD_BUTTON, true)
+        get() = prefs.getBoolean(SHOW_DIALPAD_BUTTON, false)
         set(showDialpadButton) = prefs.edit { putBoolean(SHOW_DIALPAD_BUTTON, showDialpadButton) }
 
     var wasLocalAccountInitialized: Boolean
