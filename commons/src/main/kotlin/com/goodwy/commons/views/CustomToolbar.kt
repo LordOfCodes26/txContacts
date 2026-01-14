@@ -62,6 +62,7 @@ class CustomToolbar @JvmOverloads constructor(
     private var onNavigationClickListener: OnClickListener? = null
     private var onSearchTextChangedListener: ((String) -> Unit)? = null
     private var onSearchBackClickListener: OnClickListener? = null
+    private var onSearchExpandListener: OnClickListener? = null
     
     var isSearchExpanded: Boolean = false
         private set
@@ -319,11 +320,18 @@ class CustomToolbar @JvmOverloads constructor(
         onSearchBackClickListener = listener
     }
     
+    fun setOnSearchExpandListener(listener: OnClickListener?) {
+        onSearchExpandListener = listener
+    }
+    
     fun expandSearch() {
         if (isSearchExpanded) return
         
         setupSearchContainer()
         isSearchExpanded = true
+        
+        // Notify listener that search was expanded
+        onSearchExpandListener?.onClick(this)
         
         // Hide title and search icon button (keep menu button visible)
         binding?.titleTextView?.visibility = View.GONE
@@ -569,16 +577,6 @@ class CustomToolbar @JvmOverloads constructor(
             .any { it.isVisible }
         
         binding?.menuButton?.visibility = if (hasVisibleItems) View.VISIBLE else View.GONE
-        
-        // Set default overflow icon if menu button is visible and no icon is set
-        if (hasVisibleItems && binding?.menuButton?.drawable == null) {
-            val overflowIcon = ContextCompat.getDrawable(context, R.drawable.ic_three_dots_vector)
-            overflowIcon?.let {
-                val textColor = context.getProperTextColor()
-                it.applyColorFilter(textColor)
-                binding?.menuButton?.setImageDrawable(it)
-            }
-        }
         
         // Keep menu button visible even when search is expanded
     }

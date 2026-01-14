@@ -96,32 +96,18 @@ class InsertOrEditContactActivity : SimpleActivity(), RefreshContactsListener {
     }
 
     private fun setupOptionsMenu() {
-        binding.insertEditMenu.requireToolbar().inflateMenu(R.menu.menu_insert_or_edit)
+        binding.insertEditMenu.requireCustomToolbar().inflateMenu(R.menu.menu_insert_or_edit)
         binding.insertEditMenu.toggleHideOnScroll(false)
 
-        if (baseConfig.useSpeechToText) {
-            isSpeechToTextAvailable = isSpeechToTextAvailable()
-            binding.insertEditMenu.showSpeechToText = isSpeechToTextAvailable
-        }
 
         binding.insertEditMenu.setupMenu()
-
-        binding.insertEditMenu.onSpeechToTextClickListener = {
-            speechToText()
-        }
-
-        binding.insertEditMenu.onSearchClosedListener = {
-            getAllFragments().forEach {
-                it?.onSearchClosed()
-            }
-        }
 
         binding.insertEditMenu.onSearchTextChangedListener = { text ->
             getCurrentFragment()?.onSearchQueryChanged(text)
             binding.insertEditMenu.clearSearch()
         }
 
-        binding.insertEditMenu.requireToolbar().setOnMenuItemClickListener { menuItem ->
+        binding.insertEditMenu.requireCustomToolbar().setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.sort -> showSortingDialog()
                 R.id.filter -> showFilterDialog()

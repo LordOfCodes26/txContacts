@@ -7,6 +7,8 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.inputmethod.EditorInfo
+import androidx.appcompat.widget.SearchView
+import androidx.core.view.MenuItemCompat
 import com.reddit.indicatorfastscroll.FastScrollItemIndicator
 import com.goodwy.commons.extensions.*
 import com.goodwy.commons.helpers.ContactsHelper
@@ -43,6 +45,8 @@ class SelectContactsActivity : SimpleActivity() {
         const val RESULT_ADDED_CONTACT_IDS = "added_contact_ids"
         const val RESULT_REMOVED_CONTACT_IDS = "removed_contact_ids"
     }
+    
+    private var wasSelectedContactIdsProvided = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,6 +56,7 @@ class SelectContactsActivity : SimpleActivity() {
 
         allowSelectMultiple = intent.getBooleanExtra(EXTRA_ALLOW_SELECT_MULTIPLE, true)
         showOnlyContactsWithNumber = intent.getBooleanExtra(EXTRA_SHOW_ONLY_CONTACTS_WITH_NUMBER, false)
+        wasSelectedContactIdsProvided = intent.hasExtra(EXTRA_SELECTED_CONTACT_IDS)
         selectedContactIds = intent.getLongArrayExtra(EXTRA_SELECTED_CONTACT_IDS)?.toList() ?: emptyList()
 
         val useSurfaceColor = isDynamicTheme() && !isSystemInDarkMode()
@@ -101,13 +106,17 @@ class SelectContactsActivity : SimpleActivity() {
 
                 // Load initially selected contacts from IDs if provided
                 // Use contacts from allContacts list to ensure same instances are used
-                if (selectedContactIds.isNotEmpty() && initiallySelectedContacts.isEmpty()) {
-                    val selectedIdsSet = selectedContactIds.toSet()
-                    initiallySelectedContacts = allContacts.filter { contact ->
-                        selectedIdsSet.contains(contact.id.toLong())
-                    } as ArrayList<Contact>
+                if (wasSelectedContactIdsProvided) {
+                    // Extra was explicitly provided (even if empty), use it
+                    if (selectedContactIds.isNotEmpty()) {
+                        val selectedIdsSet = selectedContactIds.toSet()
+                        initiallySelectedContacts = allContacts.filter { contact ->
+                            selectedIdsSet.contains(contact.id.toLong())
+                        } as ArrayList<Contact>
+                    }
+                    // If empty, initiallySelectedContacts stays empty (no contacts pre-selected)
                 } else if (initiallySelectedContacts.isEmpty()) {
-                    // If no IDs provided, use starred contacts as default
+                    // If no IDs provided at all, use starred contacts as default
                     initiallySelectedContacts = allContacts.filter { it.starred == 1 } as ArrayList<Contact>
                 }
                 
@@ -196,11 +205,11 @@ class SelectContactsActivity : SimpleActivity() {
 
     private fun setupOptionsMenu() {
         binding.selectContactsMenu.apply {
-            requireToolbar().inflateMenu(R.menu.menu_select_contacts)
-            requireToolbar().menu.findItem(R.id.done)?.isVisible = allowSelectMultiple
-            setupSearch(requireToolbar().menu)
+            requireCustomToolbar().inflateMenu(R.menu.menu_select_contacts)
+            requireCustomToolbar().menu.findItem(R.id.done)?.isVisible = allowSelectMultiple
+            setupSearch(requireCustomToolbar().menu)
             updateMenuItems()
-            requireToolbar().setOnMenuItemClickListener { menuItem ->
+            requireCustomToolbar().setOnMenuItemClickListener { menuItem ->
                 when (menuItem.itemId) {
                     R.id.done -> {
                         confirmSelection()
@@ -224,7 +233,19 @@ class SelectContactsActivity : SimpleActivity() {
         updateMenuItemColors(menu)
         val searchManager = getSystemService(android.content.Context.SEARCH_SERVICE) as android.app.SearchManager
         mSearchMenuItem = menu.findItem(R.id.search)
-        mSearchView = (mSearchMenuItem!!.actionView as androidx.appcompat.widget.SearchView).apply {
+        var actionView = mSearchMenuItem!!.actionView
+        if (actionView == null) {
+            actionView = MenuItemCompat.getActionView(mSearchMenuItem!!)
+        }
+        if (actionView == null) {
+            // If actionView is still null, create it manually
+            val searchView = SearchView(this)
+            MenuItemCompat.setActionView(mSearchMenuItem!!, searchView)
+            actionView = searchView
+        }
+        val searchView = (actionView as? SearchView) ?: throw IllegalStateException("SearchView actionView could not be created")
+        mSearchView = searchView
+        searchView.apply {
             val textColor = getProperTextColor()
             val smallPadding = resources.getDimensionPixelSize(com.goodwy.commons.R.dimen.small_margin)
             
@@ -252,7 +273,7 @@ class SelectContactsActivity : SimpleActivity() {
             setSearchableInfo(searchManager.getSearchableInfo(componentName))
             isSubmitButtonEnabled = false
             queryHint = getString(R.string.search_contacts)
-            setOnQueryTextListener(object : androidx.appcompat.widget.SearchView.OnQueryTextListener {
+            setOnQueryTextListener(object : SearchView.OnQueryTextListener {
                 override fun onQueryTextSubmit(query: String) = false
 
                 override fun onQueryTextChange(newText: String): Boolean {
@@ -262,7 +283,7 @@ class SelectContactsActivity : SimpleActivity() {
             })
         }
 
-        androidx.core.view.MenuItemCompat.setOnActionExpandListener(mSearchMenuItem, object : androidx.core.view.MenuItemCompat.OnActionExpandListener {
+        MenuItemCompat.setOnActionExpandListener(mSearchMenuItem, object : MenuItemCompat.OnActionExpandListener {
             override fun onMenuItemActionExpand(item: MenuItem?): Boolean {
                 return true
             }
@@ -301,7 +322,7 @@ class SelectContactsActivity : SimpleActivity() {
     }
     
     private fun updateMenuItems() {
-        binding.selectContactsMenu.requireToolbar().menu.apply {
+        binding.selectContactsMenu.requireCustomToolbar().menu.apply {
             val allSelected = selectedContacts.size == allContacts.size && allContacts.isNotEmpty()
             val noneSelected = selectedContacts.isEmpty()
             

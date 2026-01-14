@@ -5,6 +5,7 @@ import android.content.Intent
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import com.goodwy.commons.dialogs.ConfirmationDialog
 import com.goodwy.commons.extensions.*
@@ -122,6 +123,7 @@ class GroupContactsActivity : SimpleActivity(), RemoveFromGroupListener, Refresh
     }
 
     private fun fabClicked() {
+        Log.d("CHero-fabClicked", groupContacts.size.toString())
         startSelectContactsActivity(
             allowSelectMultiple = true,
             showOnlyContactsWithNumber = false,

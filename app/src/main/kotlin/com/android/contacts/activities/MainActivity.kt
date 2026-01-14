@@ -106,7 +106,7 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
         appLaunched(BuildConfig.APPLICATION_ID)
         setupOptionsMenu()
         refreshMenuItems()
-        setupEdgeToEdge(padBottomImeAndSystem = listOf(binding.mainTabsHolder))
+        setupEdgeToEdge(padBottomImeAndSystem = listOf())
 
         storeStateVariables()
         checkContactPermissions()
@@ -196,13 +196,18 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
             }
         }
 
-        val dialpadIcon = resources.getColoredDrawableWithColor(com.goodwy.commons.R.drawable.ic_dialpad_vector, properPrimaryColor.getContrastColor())
+        val contrastColor = properBackgroundColor.getContrastColor()
+        val iconColor = if (baseConfig.topAppBarColorIcon) properPrimaryColor else contrastColor
+        
+        val dialpadIcon = resources.getColoredDrawableWithColor(com.goodwy.commons.R.drawable.ic_dialpad_vector, iconColor)
         binding.mainDialpadButton.apply {
             setImageDrawable(dialpadIcon)
             beVisibleIf(config.showDialpadButton)
         }
-        val addIcon = resources.getColoredDrawableWithColor(com.goodwy.commons.R.drawable.ic_plus_vector, properPrimaryColor.getContrastColor())
+        val addIcon = resources.getColoredDrawableWithColor(com.goodwy.commons.R.drawable.ic_plus_vector, iconColor)
         binding.mainAddButton.setImageDrawable(addIcon)
+        val overflowIcon = resources.getColoredDrawableWithColor(com.goodwy.commons.R.drawable.ic_three_dots_vector, iconColor)
+        binding.mainMenu.requireCustomToolbar().overflowIcon = overflowIcon
 
         updateTextColors(binding.mainCoordinator)
         binding.mainMenu.updateColors(
@@ -315,7 +320,7 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
         val groupsFragment = getGroupsFragment()
         val favoritesFragment = getFavoritesFragment()
         binding.mainMenu.requireCustomToolbar().menu.apply {
-            findItem(R.id.search).isVisible = /*!config.bottomNavigationBar*/ true
+            findItem(R.id.search).isVisible = /*!config.bottomNavigationBar*/ false
             findItem(R.id.sort).isVisible = currentFragment != groupsFragment
             findItem(R.id.filter).isVisible = currentFragment != groupsFragment
             findItem(R.id.select).isVisible = currentFragment != null

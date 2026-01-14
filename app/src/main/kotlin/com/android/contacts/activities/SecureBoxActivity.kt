@@ -216,11 +216,11 @@ class SecureBoxActivity : SimpleActivity() {
 
     private fun setupOptionsMenu() {
         binding.selectContactsMenu.apply {
-            requireToolbar().inflateMenu(R.menu.menu_select_contacts)
-            requireToolbar().menu.findItem(R.id.done)?.isVisible = false
-            requireToolbar().menu.findItem(R.id.select_all)?.isVisible = false
-            requireToolbar().menu.findItem(R.id.deselect_all)?.isVisible = false
-            setupSearch(requireToolbar().menu)
+            requireCustomToolbar().inflateMenu(R.menu.menu_select_contacts)
+            requireCustomToolbar().menu.findItem(R.id.done)?.isVisible = false
+            requireCustomToolbar().menu.findItem(R.id.select_all)?.isVisible = false
+            requireCustomToolbar().menu.findItem(R.id.deselect_all)?.isVisible = false
+            setupSearch(requireCustomToolbar().menu)
         }
     }
 
@@ -228,7 +228,19 @@ class SecureBoxActivity : SimpleActivity() {
         updateMenuItemColors(menu)
         val searchManager = getSystemService(android.content.Context.SEARCH_SERVICE) as android.app.SearchManager
         mSearchMenuItem = menu.findItem(R.id.search)
-        mSearchView = (mSearchMenuItem!!.actionView as androidx.appcompat.widget.SearchView).apply {
+        var actionView = mSearchMenuItem!!.actionView
+        if (actionView == null) {
+            actionView = androidx.core.view.MenuItemCompat.getActionView(mSearchMenuItem!!)
+        }
+        if (actionView == null) {
+            // If actionView is still null, create it manually
+            val searchView = androidx.appcompat.widget.SearchView(this)
+            androidx.core.view.MenuItemCompat.setActionView(mSearchMenuItem!!, searchView)
+            actionView = searchView
+        }
+        val searchView = (actionView as? androidx.appcompat.widget.SearchView) ?: throw IllegalStateException("SearchView actionView could not be created")
+        mSearchView = searchView
+        searchView.apply {
             val textColor = getProperTextColor()
             val smallPadding = resources.getDimensionPixelSize(com.goodwy.commons.R.dimen.small_margin)
             

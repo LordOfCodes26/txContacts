@@ -182,29 +182,46 @@ class GroupsAdapter(
         }
     }
 
+    private fun askConfirmDelete(group: Group) {
+        val item = "\"${group.title}\""
+        val baseString = com.goodwy.commons.R.string.deletion_confirmation
+        val question = String.format(resources.getString(baseString), item)
+
+        val blurTarget = activity.findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+            ?: throw IllegalStateException("mainBlurTarget not found")
+        ConfirmationDialog(activity, question, blurTarget = blurTarget) {
+            ensureBackgroundThread {
+                deleteGroups(listOf(group))
+            }
+        }
+    }
+
     private fun deleteGroups() {
         if (selectedKeys.isEmpty()) {
             return
         }
 
-        val groupsToRemove = groups.filter { selectedKeys.contains(it.id!!.toInt()) } as ArrayList<Group>
-        val positions = getSelectedItemPositions()
-        groupsToRemove.forEach {
+        val groupsToRemove = groups.filter { selectedKeys.contains(it.id!!.toInt()) }
+        deleteGroups(groupsToRemove)
+    }
+
+    private fun deleteGroups(groupsToRemove: List<Group>) {
+        if (groupsToRemove.isEmpty()) {
+            return
+        }
+
+        val groupsToRemoveList = ArrayList(groupsToRemove)
+        groupsToRemoveList.forEach {
             if (it.isPrivateSecretGroup()) {
                 activity.groupsDB.deleteGroupId(it.id!!)
             } else {
                 ContactsHelper(activity).deleteGroup(it.id!!)
             }
         }
-        groups.removeAll(groupsToRemove)
 
         activity.runOnUiThread {
-            if (groups.isEmpty()) {
-                refreshListener?.refreshContacts(TAB_GROUPS)
-                finishActMode()
-            } else {
-                removeSelectedItems(positions)
-            }
+            refreshListener?.refreshContacts(TAB_GROUPS)
+            finishActMode()
         }
     }
 
@@ -264,10 +281,14 @@ class GroupsAdapter(
             }
             
             setOnMenuItemClickListener { item ->
-                executeItemMenuOperation(group.id!!.toInt()) {
-                    when (item.itemId) {
-                        R.id.cab_rename -> renameGroup()
-                        R.id.cab_delete -> askConfirmDelete()
+                when (item.itemId) {
+                    R.id.cab_rename -> {
+                        executeItemMenuOperation(group.id!!.toInt()) {
+                            renameGroup()
+                        }
+                    }
+                    R.id.cab_delete -> {
+                        askConfirmDelete(group)
                     }
                 }
                 true

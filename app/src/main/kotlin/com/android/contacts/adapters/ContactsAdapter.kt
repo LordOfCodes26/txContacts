@@ -17,8 +17,8 @@ import android.view.ViewGroup
 import android.view.ContextThemeWrapper
 import android.widget.FrameLayout
 import android.widget.ImageView
-import android.widget.PopupMenu
 import android.widget.RelativeLayout
+import com.goodwy.commons.views.BlurPopupMenu
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.ItemTouchHelper
@@ -287,12 +287,14 @@ class ContactsAdapter(
             
             // Track touch position for popup menu positioning
             if (allowLongClick) {
+                var lastTouchY: Float = -1f
                 itemView.setOnTouchListener { view, event ->
                     if (event.action == MotionEvent.ACTION_DOWN ||
                         event.action == MotionEvent.ACTION_MOVE) {
                         lastTouchX = event.x
-                        // Store in view tag
-                        view.tag = lastTouchX
+                        lastTouchY = event.y
+                        // Store in view tag as Pair<Float, Float>
+                        view.tag = Pair(lastTouchX, lastTouchY)
                     }
                     false  // Don't consume the event
                 }
@@ -302,8 +304,10 @@ class ContactsAdapter(
         // Set long click listener AFTER bindView to override the default behavior
         if (allowLongClick) {
             holder.itemView.setOnLongClickListener { view ->
-                val touchX = (view.tag as? Float) ?: lastTouchX
-                showPopupMenu(holder.itemView, contact, touchX)
+                val touchPos = (view.tag as? Pair<*, *>)
+                val touchX = (touchPos?.first as? Float) ?: lastTouchX
+                val touchY = (touchPos?.second as? Float) ?: -1f
+                showPopupMenu(holder.itemView, contact, touchX, touchY)
                 true
             }
         }
@@ -420,9 +424,16 @@ class ContactsAdapter(
 
     private fun showGroupsPicker(radioItems: ArrayList<RadioItem>) {
         val selectedContacts = getSelectedItems()
+        val contactId = selectedContacts.firstOrNull()?.id ?: return
         val blurTarget = activity.findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
             ?: throw IllegalStateException("mainBlurTarget not found")
-        RadioGroupDialog(activity, radioItems, 0, blurTarget = blurTarget) {
+        RadioGroupDialog(activity, radioItems, 0, blurTarget = blurTarget, cancelCallback = {
+            // Clean up key if dialog is cancelled
+            selectedKeys.remove(contactId)
+            if (selectedKeys.isEmpty()) {
+                finishActMode()
+            }
+        }) {
             if (it as Int == NEW_GROUP_ID) {
                 CreateNewGroupDialog(activity, blurTarget) {
                     ensureBackgroundThread {
@@ -472,7 +483,14 @@ class ContactsAdapter(
         val blurTarget = activity.findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
             ?: throw IllegalStateException("mainBlurTarget not found")
         
-        RadioGroupDialog(activity, items, 0, titleId = R.string.move_contacts_to, blurTarget = blurTarget) {
+        val contactId = selectedContacts.firstOrNull()?.id ?: return
+        RadioGroupDialog(activity, items, 0, titleId = R.string.move_contacts_to, blurTarget = blurTarget, cancelCallback = {
+            // Clean up key if dialog is cancelled
+            selectedKeys.remove(contactId)
+            if (selectedKeys.isEmpty()) {
+                finishActMode()
+            }
+        }) {
             val destinationSource = it as String
             ensureBackgroundThread {
                 contactsHelper.moveContacts(selectedContacts, destinationSource) { success, copiedCount ->
@@ -985,10 +1003,8 @@ class ContactsAdapter(
         }
     }
 
-    private fun showPopupMenu(view: View, contact: Contact, touchX: Float = -1f) {
+    private fun showPopupMenu(view: View, contact: Contact, touchX: Float = -1f, touchY: Float = -1f) {
         finishActMode()
-        val theme = activity.getPopupMenuTheme()
-        val contextTheme = ContextThemeWrapper(activity, theme)
         
         // Determine gravity based on touch position: left side = START, right side = END
         val gravity = if (touchX >= 0 && touchX < view.width / 2) {
@@ -997,7 +1013,7 @@ class ContactsAdapter(
             Gravity.END
         }
 
-        PopupMenu(contextTheme, view, gravity).apply {
+        BlurPopupMenu(activity, view, gravity, touchX, touchY).apply {
             inflate(R.menu.cab)
             
             // Prepare menu items visibility based on contact and location
@@ -1028,76 +1044,44 @@ class ContactsAdapter(
             }
             
             setOnMenuItemClickListener { item ->
-                executeItemMenuOperation(contact.id) {
-                    when (item.itemId) {
-                        R.id.cab_edit -> editContact()
-                        R.id.cab_remove -> removeContacts()
-                        R.id.cab_add_to_favorites -> addToFavorites()
-                        R.id.cab_add_to_group -> addToGroup()
-                        R.id.cab_share -> shareContacts()
-                        R.id.cab_call -> callContact()
-                        R.id.cab_send_sms_to_contacts -> sendSMSToContacts()
-                        R.id.cab_send_email_to_contacts -> sendEmailToContacts()
-                        R.id.cab_create_shortcut -> createShortcut()
-                        R.id.cab_delete -> askConfirmDelete()
-                        R.id.cab_move -> moveContacts()
-                        R.id.cab_export -> exportContactsToVcf()
+                when (item.itemId) {
+                    R.id.cab_delete -> {
+                        // For delete, add to selectedKeys and keep it until deletion completes
+                        selectedKeys.add(contact.id)
+                        askConfirmDelete()
+                    }
+                    R.id.cab_add_to_group, R.id.cab_move, R.id.cab_export -> {
+                        // For operations that show dialogs, keep the key until dialog callbacks complete
+                        selectedKeys.add(contact.id)
+                        when (item.itemId) {
+                            R.id.cab_add_to_group -> addToGroup()
+                            R.id.cab_move -> moveContacts()
+                            R.id.cab_export -> exportContactsToVcf()
+                        }
+                    }
+                    R.id.cab_remove -> {
+                        // For remove, keep the key until operation completes (it's async for favorites)
+                        selectedKeys.add(contact.id)
+                        removeContacts()
+                    }
+                    else -> {
+                        // For other operations, use the temporary add/remove pattern
+                        executeItemMenuOperation(contact.id) {
+                            when (item.itemId) {
+                                R.id.cab_edit -> editContact()
+                                R.id.cab_add_to_favorites -> addToFavorites()
+                                R.id.cab_share -> shareContacts()
+                                R.id.cab_call -> callContact()
+                                R.id.cab_send_sms_to_contacts -> sendSMSToContacts()
+                                R.id.cab_send_email_to_contacts -> sendEmailToContacts()
+                                R.id.cab_create_shortcut -> createShortcut()
+                            }
+                        }
                     }
                 }
                 true
             }
             show()
-
-            // Adjust X position based on touch location using reflection
-            if (touchX >= 0) {
-                try {
-                    // Access PopupMenu's internal PopupWindow to adjust X position
-                    val popupField = PopupMenu::class.java.getDeclaredField("mPopup")
-                    popupField.isAccessible = true
-                    val menuPopup = popupField.get(this)
-
-                    val popupWindowField = menuPopup.javaClass.getDeclaredField("mPopup")
-                    popupWindowField.isAccessible = true
-                    val popupWindow = popupWindowField.get(menuPopup) as android.widget.PopupWindow
-
-                    // Calculate X offset: center menu on touch point
-                    view.post {
-                        val location = IntArray(2)
-                        view.getLocationOnScreen(location)
-                        val viewX = location[0]
-                        val screenWidth = activity.resources.displayMetrics.widthPixels
-
-                        // Get menu width (approximate or measure)
-                        val menuWidth = (screenWidth * 0.6).toInt()
-                        val offset = activity.resources.getDimensionPixelSize(com.goodwy.commons.R.dimen.smaller_margin)
-
-                        // Calculate desired X position based on touch location
-                        val touchXInt = touchX.toInt()
-                        val isLeftSide = touchXInt < view.width / 2
-                        var menuX: Int = if (isLeftSide) {
-                            // Menu starts at touchX with offset
-                            viewX + touchXInt + offset
-                        } else {
-                            // Menu ends at touchX with offset
-                            viewX + touchXInt - menuWidth - offset
-                        }
-
-                        // Keep within screen bounds
-                        if (menuX < 0) menuX = 0
-                        if (menuX + menuWidth > screenWidth) menuX = screenWidth - menuWidth
-
-                        // Get current Y position
-                        val yLocation = IntArray(2)
-                        view.getLocationOnScreen(yLocation)
-                        val yOffset = yLocation[1] + view.height
-
-                        // Update popup position
-                        popupWindow.update(menuX, yOffset, -1, -1)
-                    }
-                } catch (e: Exception) {
-                    // If reflection fails, use default positioning
-                }
-            }
         }
     }
 
