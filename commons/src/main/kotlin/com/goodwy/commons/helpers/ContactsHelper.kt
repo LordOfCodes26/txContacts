@@ -94,15 +94,37 @@ class ContactsHelper(val context: Context) {
                     groupedByName.getOrPut(key) { ArrayList() }.add(contact)
                 }
                 
-                // Process grouped contacts
+                // Process grouped contacts - merge permanently in database
+                val groupsToMerge = ArrayList<ArrayList<Contact>>()
                 for (group in groupedByName.values) {
                     if (group.size == 1) {
                         resultContacts.add(group.first())
                     } else {
-                        // Optimize: Use maxByOrNull instead of sort + firstOrNull
+                        groupsToMerge.add(group)
+                    }
+                }
+                
+                // Permanently merge duplicate contacts in the database
+                for (group in groupsToMerge) {
+                    if (mergeContactsPermanently(group)) {
+                        // After merging, get the updated contact
                         val bestMatch = group.maxByOrNull { contact ->
                             val compareLength = contact.getStringToCompare().length
-                            // Prefer contacts with phone numbers
+                            if (contact.phoneNumbers.isNotEmpty()) compareLength + 1000 else compareLength
+                        } ?: group.first()
+                        
+                        // Get the updated merged contact from database
+                        val mergedContact = getContactWithId(bestMatch.id)
+                        if (mergedContact != null) {
+                            resultContacts.add(mergedContact)
+                        } else {
+                            // Fallback: use best match if we can't get updated contact
+                            resultContacts.add(bestMatch)
+                        }
+                    } else {
+                        // If merge failed, just use best match for display
+                        val bestMatch = group.maxByOrNull { contact ->
+                            val compareLength = contact.getStringToCompare().length
                             if (contact.phoneNumbers.isNotEmpty()) compareLength + 1000 else compareLength
                         } ?: group.first()
                         resultContacts.add(bestMatch)
@@ -1180,8 +1202,64 @@ class ContactsHelper(val context: Context) {
         return 0
     }
 
+    fun mergeContactsPermanently(group: ArrayList<Contact>): Boolean {
+        if (group.size <= 1 || !context.hasPermission(PERMISSION_WRITE_CONTACTS)) {
+            return false
+        }
+        
+        // Pick the best match contact as the base
+        val bestMatch = group.maxByOrNull { contact ->
+            val compareLength = contact.getStringToCompare().length
+            // Prefer contacts with phone numbers
+            if (contact.phoneNumbers.isNotEmpty()) compareLength + 1000 else compareLength
+        } ?: group.first()
+        
+        // Get full contact data for best match
+        val fullBestMatch = getContactWithId(bestMatch.id) ?: return false
+        
+        // Merge phone numbers from all contacts with the same name
+        val mergedPhoneNumbers = LinkedHashSet<PhoneNumber>(fullBestMatch.phoneNumbers)
+        for (contact in group) {
+            if (contact.id != bestMatch.id) {
+                val fullContact = getContactWithId(contact.id)
+                if (fullContact != null) {
+                    mergedPhoneNumbers.addAll(fullContact.phoneNumbers)
+                }
+            }
+        }
+        
+        // Deduplicate phone numbers based on normalized number (last 9 digits)
+        val COMPARABLE_PHONE_NUMBER_LENGTH = 9
+        fullBestMatch.phoneNumbers = mergedPhoneNumbers.distinctBy {
+            if (it.normalizedNumber.length >= COMPARABLE_PHONE_NUMBER_LENGTH) {
+                it.normalizedNumber.substring(it.normalizedNumber.length - COMPARABLE_PHONE_NUMBER_LENGTH)
+            } else {
+                it.normalizedNumber
+            }
+        }.toMutableList() as ArrayList<PhoneNumber>
+        
+        // Update the best match contact with merged phone numbers (silent, no toast)
+        val updateSuccess = updateContactInternal(fullBestMatch, 0, showToast = false)
+        
+        if (updateSuccess) {
+            // Delete the duplicate contacts (excluding the best match)
+            val duplicatesToDelete = group.filter { it.id != bestMatch.id }
+            if (duplicatesToDelete.isNotEmpty()) {
+                deleteContacts(duplicatesToDelete as ArrayList<Contact>)
+            }
+        }
+        
+        return updateSuccess
+    }
+
     fun updateContact(contact: Contact, photoUpdateStatus: Int): Boolean {
-        context.toast(R.string.updating)
+        return updateContactInternal(contact, photoUpdateStatus, showToast = true)
+    }
+    
+    private fun updateContactInternal(contact: Contact, photoUpdateStatus: Int, showToast: Boolean = false): Boolean {
+        if (showToast) {
+            context.toast(R.string.updating)
+        }
 
         try {
             val operations = ArrayList<ContentProviderOperation>()
@@ -2127,11 +2205,34 @@ class ContactsHelper(val context: Context) {
             if (context.baseConfig.mergeDuplicateContacts) {
                 // Optimize: Use HashSet for O(1) lookup instead of O(n) contains
                 val displaySourcesSet = displayContactSources.toHashSet()
-                tempContacts.filter { displaySourcesSet.contains(it.source) }.groupBy { it.getNameToDisplay().lowercase() }.values.forEach { group ->
+                val groupedContacts = tempContacts.filter { displaySourcesSet.contains(it.source) }.groupBy { it.getNameToDisplay().lowercase() }
+                
+                val groupsToMerge = ArrayList<ArrayList<Contact>>()
+                for (group in groupedContacts.values) {
                     if (group.size == 1) {
                         resultContacts.add(group.first())
                     } else {
-                        // Optimize: Use maxByOrNull instead of sorted + first
+                        groupsToMerge.add(group as ArrayList<Contact>)
+                    }
+                }
+                
+                // Permanently merge duplicate contacts in the database
+                for (group in groupsToMerge) {
+                    if (mergeContactsPermanently(group)) {
+                        // After merging, get the updated contact
+                        val bestMatch = group.maxByOrNull { it.getStringToCompare().length }
+                        if (bestMatch != null) {
+                            // Get the updated merged contact from database
+                            val mergedContact = getContactWithId(bestMatch.id)
+                            if (mergedContact != null) {
+                                resultContacts.add(mergedContact)
+                            } else {
+                                // Fallback: use best match if we can't get updated contact
+                                resultContacts.add(bestMatch)
+                            }
+                        }
+                    } else {
+                        // If merge failed, just use best match for display
                         val bestMatch = group.maxByOrNull { it.getStringToCompare().length }
                         if (bestMatch != null) {
                             resultContacts.add(bestMatch)

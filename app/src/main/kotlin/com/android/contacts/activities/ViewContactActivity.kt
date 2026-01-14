@@ -63,11 +63,13 @@ class ViewContactActivity : ContactActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
+        setupEdgeToEdge(
+            padBottomSystem = listOf(binding.contactScrollview)
+        )
 
         if (checkAppSideloading()) {
             return
         }
-        binding.contactWrapper.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
         setupMenu()
         initButton()
     }
@@ -121,19 +123,45 @@ class ViewContactActivity : ContactActivity() {
     }
 
     private fun updateColors() {
-        if (isLightTheme() && !isDynamicTheme()) {
-            val colorToWhite = getSurfaceColor()
-            supportActionBar?.setBackgroundDrawable(colorToWhite.toDrawable())
-            window.decorView.setBackgroundColor(colorToWhite)
-            window.statusBarColor = colorToWhite
-            //window.navigationBarColor = colorToWhite
-            binding.topViewHolder.setBackgroundColor(colorToWhite)
-            binding.collapsingToolbar.setBackgroundColor(colorToWhite)
+        // Update background based on avatar color if contact is available
+        if (contact != null) {
+            val contactName = contact!!.getNameToDisplay()
+            val avatarColor = getAvatarColorForName(contactName)
+            val gradientDrawable = createAvatarGradientDrawable(avatarColor)
+            
+            binding.contactWrapper.background = gradientDrawable
+            window.decorView.background = gradientDrawable
+            
+            // Update status bar color to match avatar color (with some transparency for better visibility)
+            window.statusBarColor = avatarColor
+            
+            // Keep top view holder and collapsing toolbar with proper background
+            if (isLightTheme() && !isDynamicTheme()) {
+                val colorToWhite = getSurfaceColor()
+                supportActionBar?.setBackgroundDrawable(colorToWhite.toDrawable())
+                binding.topViewHolder.setBackgroundColor(colorToWhite)
+                binding.collapsingToolbar.setBackgroundColor(colorToWhite)
+            } else {
+                val properBackgroundColor = getProperBackgroundColor()
+                binding.topViewHolder.setBackgroundColor(properBackgroundColor)
+                binding.collapsingToolbar.setBackgroundColor(properBackgroundColor)
+            }
         } else {
-            val properBackgroundColor = getProperBackgroundColor()
-            window.decorView.setBackgroundColor(properBackgroundColor)
-            binding.topViewHolder.setBackgroundColor(properBackgroundColor)
-            binding.collapsingToolbar.setBackgroundColor(properBackgroundColor)
+            // Fallback to default colors when contact is not available
+            if (isLightTheme() && !isDynamicTheme()) {
+                val colorToWhite = getSurfaceColor()
+                supportActionBar?.setBackgroundDrawable(colorToWhite.toDrawable())
+                window.decorView.setBackgroundColor(colorToWhite)
+                window.statusBarColor = colorToWhite
+                //window.navigationBarColor = colorToWhite
+                binding.topViewHolder.setBackgroundColor(colorToWhite)
+                binding.collapsingToolbar.setBackgroundColor(colorToWhite)
+            } else {
+                val properBackgroundColor = getProperBackgroundColor()
+                window.decorView.setBackgroundColor(properBackgroundColor)
+                binding.topViewHolder.setBackgroundColor(properBackgroundColor)
+                binding.collapsingToolbar.setBackgroundColor(properBackgroundColor)
+            }
         }
 
         binding.apply {
@@ -157,8 +185,6 @@ class ViewContactActivity : ContactActivity() {
         val contrastColor = getProperBackgroundColor().getContrastColor()
         val primaryColor = getProperPrimaryColor()
         val iconColor = if (baseConfig.topAppBarColorIcon) primaryColor else contrastColor
-        //(contact_appbar.layoutParams as CoordinatorLayout.LayoutParams).topMargin = statusBarHeight
-        (binding.contactWrapper.layoutParams as FrameLayout.LayoutParams).topMargin = statusBarHeight
         binding.contactToolbar.overflowIcon = resources.getColoredDrawableWithColor(com.goodwy.commons.R.drawable.ic_three_dots_vector, iconColor)
         binding.contactToolbar.menu.apply {
             updateMenuItemColors(this)
@@ -309,6 +335,7 @@ class ViewContactActivity : ContactActivity() {
 
         updateTextColors(binding.contactScrollview)
         binding.contactToolbar.menu.findItem(R.id.open_with).isVisible = /*contact?.isPrivate() == false*/false
+        updateColors()
     }
 
     private fun setupViewContact() {

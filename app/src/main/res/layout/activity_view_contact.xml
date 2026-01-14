@@ -30,6 +30,7 @@
         android:layout_alignParentTop="true"
         android:background="@android:color/transparent"
         android:elevation="0dp"
+        android:fitsSystemWindows="true"
         app:elevation="0dp"
         tools:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior">
 

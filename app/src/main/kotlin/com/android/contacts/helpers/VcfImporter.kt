@@ -8,6 +8,13 @@ import android.provider.ContactsContract.CommonDataKinds.Phone
 import android.provider.ContactsContract.CommonDataKinds.StructuredPostal
 import android.widget.Toast
 import android.content.Context
+import android.view.ViewGroup
+import android.view.Gravity
+import android.widget.FrameLayout
+import android.widget.ProgressBar
+import android.view.View
+import android.os.Handler
+import android.os.Looper
 import com.goodwy.commons.extensions.getCachePhoto
 import com.goodwy.commons.extensions.groupsDB
 import com.goodwy.commons.extensions.insertHiddenContact
@@ -50,6 +57,9 @@ class VcfImporter(val activity: SimpleActivity) {
 
     private var contactsImported = 0
     private var contactsFailed = 0
+    
+    // Progress overlay tracking
+    private var progressOverlay: ViewGroup? = null
 
     companion object {
         /**
@@ -179,6 +189,9 @@ class VcfImporter(val activity: SimpleActivity) {
      * Import contacts from VCF file. Can be used with SimpleActivity.
      */
     fun importContacts(path: String, targetContactSource: String, importAsHidden: Boolean = false): ImportResult {
+        // Show progress overlay
+        showProgressOverlay()
+        
         try {
             val inputStream = if (path.contains("/")) {
                 File(path).inputStream()
@@ -483,12 +496,95 @@ class VcfImporter(val activity: SimpleActivity) {
         } catch (e: Exception) {
             activity.showErrorToast(e, Toast.LENGTH_LONG)
             contactsFailed++
+        } finally {
+            // Hide progress overlay
+            hideProgressOverlay()
         }
 
         return when {
             contactsImported == 0 -> IMPORT_FAIL
             contactsFailed > 0 -> IMPORT_PARTIAL
             else -> IMPORT_OK
+        }
+    }
+    
+    private fun showProgressOverlay() {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            createOverlay()
+        } else {
+            // Post to UI thread to ensure it's shown
+            Handler(Looper.getMainLooper()).post {
+                createOverlay()
+            }
+        }
+    }
+    
+    private fun createOverlay() {
+        try {
+            if (activity.isFinishing || activity.isDestroyed) {
+                return
+            }
+            
+            if (progressOverlay != null) {
+                return
+            }
+            
+            // Try to find the content view first, fallback to decorView
+            val contentView = activity.findViewById<ViewGroup>(android.R.id.content)
+            val parentView = contentView?.parent as? ViewGroup ?: (activity.window.decorView as? ViewGroup)
+            
+            if (parentView != null) {
+                // Create overlay FrameLayout
+                val overlay = FrameLayout(activity).apply {
+                    layoutParams = FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.MATCH_PARENT,
+                        FrameLayout.LayoutParams.MATCH_PARENT
+                    )
+                    setBackgroundColor(0x80000000.toInt()) // Semi-transparent black
+                    id = View.generateViewId()
+                    elevation = 1000f // Ensure it's on top
+                }
+                
+                // Create ProgressBar
+                val progressBar = ProgressBar(activity).apply {
+                    layoutParams = FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.WRAP_CONTENT,
+                        FrameLayout.LayoutParams.WRAP_CONTENT,
+                        Gravity.CENTER
+                    )
+                }
+                
+                overlay.addView(progressBar)
+                parentView.addView(overlay)
+                progressOverlay = overlay
+                
+                // Force a layout pass to ensure visibility
+                overlay.requestLayout()
+                overlay.invalidate()
+                overlay.bringToFront()
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("VcfImporter", "Failed to show progress overlay", e)
+        }
+    }
+    
+    private fun hideProgressOverlay() {
+        activity.runOnUiThread {
+            try {
+                if (activity.isFinishing || activity.isDestroyed) {
+                    progressOverlay = null
+                    return@runOnUiThread
+                }
+                
+                progressOverlay?.let { overlay ->
+                    val parent = overlay.parent as? ViewGroup
+                    parent?.removeView(overlay)
+                    progressOverlay = null
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("VcfImporter", "Failed to hide progress overlay", e)
+                progressOverlay = null
+            }
         }
     }
 
