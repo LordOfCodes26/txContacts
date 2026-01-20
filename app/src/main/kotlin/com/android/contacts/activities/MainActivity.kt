@@ -12,6 +12,7 @@ import android.graphics.drawable.LayerDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import java.util.concurrent.atomic.AtomicInteger
 import android.speech.RecognizerIntent
 import android.view.Menu
 import android.view.MenuItem
@@ -302,11 +303,29 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
             }
         } else if (requestCode == REQUEST_CODE_SELECT_CONTACTS && resultCode == RESULT_OK && resultData != null) {
             val (addedContacts, removedContacts) = resultData.getSelectedContactsResult(this)
-            ContactsHelper(this).apply {
-                addFavorites(addedContacts)
-                removeFavorites(removedContacts)
+            val contactsHelper = ContactsHelper(this)
+            val completedOperations = AtomicInteger(0)
+            val totalOperations = (if (addedContacts.isNotEmpty()) 1 else 0) + (if (removedContacts.isNotEmpty()) 1 else 0)
+            
+            if (totalOperations == 0) {
+                refreshContacts(TAB_FAVORITES)
+            } else {
+                val refreshCallback = {
+                    val completed = completedOperations.incrementAndGet()
+                    if (completed >= totalOperations) {
+                        runOnUiThread {
+                            refreshContacts(TAB_FAVORITES)
+                        }
+                    }
+                }
+                
+                if (addedContacts.isNotEmpty()) {
+                    contactsHelper.addFavorites(addedContacts, refreshCallback)
+                }
+                if (removedContacts.isNotEmpty()) {
+                    contactsHelper.removeFavorites(removedContacts, refreshCallback)
+                }
             }
-            refreshContacts(TAB_FAVORITES)
         } else {
             // Handle export contacts result
             ContactsAdapter.handleExportResult(this, requestCode, resultCode, resultData)

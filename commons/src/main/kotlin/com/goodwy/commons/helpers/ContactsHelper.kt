@@ -1925,18 +1925,20 @@ class ContactsHelper(val context: Context) {
         return ""
     }
 
-    fun addFavorites(contacts: ArrayList<Contact>) {
+    fun addFavorites(contacts: ArrayList<Contact>, callback: (() -> Unit)? = null) {
         ensureBackgroundThread {
             if (context.hasContactPermissions()) {
                 toggleFavorites(contacts, true)
+                callback?.invoke()
             }
         }
     }
 
-    fun removeFavorites(contacts: ArrayList<Contact>) {
+    fun removeFavorites(contacts: ArrayList<Contact>, callback: (() -> Unit)? = null) {
         ensureBackgroundThread {
             if (context.hasContactPermissions()) {
                 toggleFavorites(contacts, false)
+                callback?.invoke()
             }
         }
     }

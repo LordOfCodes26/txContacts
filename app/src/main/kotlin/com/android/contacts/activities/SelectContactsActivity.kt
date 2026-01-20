@@ -14,9 +14,6 @@ import android.view.inputmethod.EditorInfo
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.RelativeLayout
-import androidx.appcompat.widget.SearchView
-import androidx.core.content.ContextCompat
-import androidx.core.view.MenuItemCompat
 import com.reddit.indicatorfastscroll.FastScrollItemIndicator
 import com.goodwy.commons.extensions.*
 import com.goodwy.commons.helpers.ContactsHelper
@@ -38,8 +35,7 @@ class SelectContactsActivity : SimpleActivity() {
     private var initiallySelectedContacts = ArrayList<Contact>()
     private val selectedContacts = HashSet<Contact>()
     private var currentAdapter: SelectContactsAdapter? = null
-    private var mSearchView: androidx.appcompat.widget.SearchView? = null
-    private var mSearchMenuItem: MenuItem? = null
+    private var searchQuery = ""
     
     private var allowSelectMultiple = true
     private var showOnlyContactsWithNumber = false
@@ -82,7 +78,25 @@ class SelectContactsActivity : SimpleActivity() {
         super.onResume()
         val useSurfaceColor = isDynamicTheme() && !isSystemInDarkMode()
         val backgroundColor = if (useSurfaceColor) getSurfaceColor() else getProperBackgroundColor()
-        setupTopAppBar(binding.selectContactsMenu, NavigationIcon.Arrow, topBarColor = backgroundColor)
+        setupTopAppBar(binding.selectContactsMenu, NavigationIcon.None, topBarColor = backgroundColor)
+        
+        // Explicitly remove navigation icon
+        val customToolbar = binding.selectContactsMenu.requireCustomToolbar()
+        customToolbar.navigationIcon = null
+        
+        // Ensure toolbar is full width by removing margins
+        customToolbar.onGlobalLayout {
+            val params = customToolbar.layoutParams
+            if (params is RelativeLayout.LayoutParams) {
+                params.width = ViewGroup.LayoutParams.MATCH_PARENT
+                params.marginEnd = 0
+                params.removeRule(RelativeLayout.ALIGN_PARENT_END)
+                customToolbar.layoutParams = params
+            } else if (params != null) {
+                params.width = ViewGroup.LayoutParams.MATCH_PARENT
+                customToolbar.layoutParams = params
+            }
+        }
 
         // if selecting multiple contacts is disabled, react on first contact click and finish the activity
         contactClickCallback = if (allowSelectMultiple) {
@@ -97,6 +111,18 @@ class SelectContactsActivity : SimpleActivity() {
         }
 
         loadContacts()
+    }
+    
+    override fun onBackPressed() {
+        val customToolbar = binding.selectContactsMenu.requireCustomToolbar()
+        if (customToolbar.isSearchExpanded) {
+            customToolbar.collapseSearch()
+            binding.selectContactsMenu.isSearchOpen = false
+            searchQuery = ""
+            filterContactListBySearchQuery("")
+        } else {
+            super.onBackPressed()
+        }
     }
 
 
@@ -213,85 +239,78 @@ class SelectContactsActivity : SimpleActivity() {
 
     private fun setupOptionsMenu() {
         binding.selectContactsMenu.apply {
-            requireCustomToolbar().inflateMenu(R.menu.menu_select_contacts)
-            val menu = requireCustomToolbar().menu
+            val customToolbar = requireCustomToolbar()
+            customToolbar.inflateMenu(R.menu.menu_select_contacts)
+            val menu = customToolbar.menu
             
-            // Hide all menu items from the overflow menu
-            menu.findItem(R.id.done)?.isVisible = false
-            menu.findItem(R.id.select_all)?.isVisible = false
-            menu.findItem(R.id.deselect_all)?.isVisible = false
+            updateMenuItemColors(menu)
             
-            setupSearch(menu)
+            // Update menu item visibility based on current state
+            updateMenuItems()
+            
+            // Setup search text changed listener for CustomToolbar
+            customToolbar.setOnSearchTextChangedListener { text ->
+                searchQuery = text
+                filterContactListBySearchQuery(text)
+            }
+            
+            // Setup search expand/collapse listeners
+            customToolbar.setOnSearchExpandListener {
+                isSearchOpen = true
+                // Restore previous search query if it exists
+                if (searchQuery.isNotEmpty()) {
+                    customToolbar.setSearchText(searchQuery)
+                    filterContactListBySearchQuery(searchQuery)
+                }
+            }
+            
+            // Setup search back click listener
+            customToolbar.setOnSearchBackClickListener {
+                // CustomToolbar already calls collapseSearch() internally
+                isSearchOpen = false
+                searchQuery = ""
+                filterContactListBySearchQuery("")
+            }
+            
+            // Setup menu item click listener
+            customToolbar.setOnMenuItemClickListener { menuItem ->
+                when (menuItem.itemId) {
+                    R.id.search -> {
+                        toggleCustomSearchBar()
+                        true
+                    }
+                    R.id.select_all -> {
+                        selectAll()
+                        true
+                    }
+                    R.id.deselect_all -> {
+                        deselectAll()
+                        true
+                    }
+                    R.id.done -> {
+                        confirmSelection()
+                        true
+                    }
+                    else -> false
+                }
+            }
             
             // Hide the menu button (overflow menu) by setting overflowIcon to null
-            requireCustomToolbar().overflowIcon = null
+            customToolbar.overflowIcon = null
         }
     }
-
-    private fun setupSearch(menu: Menu) {
-        updateMenuItemColors(menu)
-        val searchManager = getSystemService(android.content.Context.SEARCH_SERVICE) as android.app.SearchManager
-        mSearchMenuItem = menu.findItem(R.id.search)
-        var actionView = mSearchMenuItem!!.actionView
-        if (actionView == null) {
-            actionView = MenuItemCompat.getActionView(mSearchMenuItem!!)
+    
+    private fun toggleCustomSearchBar() {
+        val customToolbar = binding.selectContactsMenu.requireCustomToolbar()
+        if (customToolbar.isSearchExpanded) {
+            customToolbar.collapseSearch()
+            binding.selectContactsMenu.isSearchOpen = false
+            searchQuery = ""
+            filterContactListBySearchQuery("")
+        } else {
+            customToolbar.expandSearch()
+            binding.selectContactsMenu.isSearchOpen = true
         }
-        if (actionView == null) {
-            // If actionView is still null, create it manually
-            val searchView = SearchView(this)
-            MenuItemCompat.setActionView(mSearchMenuItem!!, searchView)
-            actionView = searchView
-        }
-        val searchView = (actionView as? SearchView) ?: throw IllegalStateException("SearchView actionView could not be created")
-        mSearchView = searchView
-        searchView.apply {
-            val textColor = getProperTextColor()
-            val smallPadding = resources.getDimensionPixelSize(com.goodwy.commons.R.dimen.small_margin)
-            
-            // Post to ensure views are inflated
-            post {
-                findViewById<android.widget.TextView>(androidx.appcompat.R.id.search_src_text)?.apply {
-                    setTextColor(textColor)
-                    setHintTextColor(textColor)
-                    setPadding(smallPadding, paddingTop, paddingRight, paddingBottom)
-                }
-                findViewById<android.widget.ImageView>(androidx.appcompat.R.id.search_close_btn)?.apply {
-                    setImageResource(com.goodwy.commons.R.drawable.ic_clear_round)
-                    setColorFilter(textColor)
-                }
-                findViewById<android.view.View>(androidx.appcompat.R.id.search_plate)?.apply {
-                    background?.setColorFilter(android.graphics.Color.TRANSPARENT, android.graphics.PorterDuff.Mode.MULTIPLY)
-                    setPadding(smallPadding, paddingTop, paddingRight, paddingBottom)
-                }
-                findViewById<android.widget.ImageView>(androidx.appcompat.R.id.search_mag_icon)?.apply {
-                    setColorFilter(textColor)
-                }
-            }
-
-            setIconifiedByDefault(false)
-            setSearchableInfo(searchManager.getSearchableInfo(componentName))
-            isSubmitButtonEnabled = false
-            queryHint = getString(R.string.search_contacts)
-            setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-                override fun onQueryTextSubmit(query: String) = false
-
-                override fun onQueryTextChange(newText: String): Boolean {
-                    filterContactListBySearchQuery(newText)
-                    return true
-                }
-            })
-        }
-
-        MenuItemCompat.setOnActionExpandListener(mSearchMenuItem, object : MenuItemCompat.OnActionExpandListener {
-            override fun onMenuItemActionExpand(item: MenuItem?): Boolean {
-                return true
-            }
-
-            override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
-                filterContactListBySearchQuery("")
-                return true
-            }
-        })
     }
 
     private fun filterContactListBySearchQuery(query: String = "") {
@@ -307,7 +326,8 @@ class SelectContactsActivity : SimpleActivity() {
     private fun checkPlaceholderVisibility(contacts: ArrayList<Contact>) = with(binding) {
         selectContactPlaceholder.beVisibleIf(allContacts.isEmpty())
 
-        if (mSearchView?.isIconified == false && mSearchView?.query?.isNotEmpty() == true) {
+        val customToolbar = selectContactsMenu.requireCustomToolbar()
+        if (customToolbar.isSearchExpanded && searchQuery.isNotEmpty()) {
             selectContactPlaceholder.text = getString(com.goodwy.commons.R.string.no_items_found)
         }
 
@@ -321,7 +341,17 @@ class SelectContactsActivity : SimpleActivity() {
     }
     
     private fun updateMenuItems() {
-        // No action needed - buttons have been removed
+        val customToolbar = binding.selectContactsMenu.requireCustomToolbar()
+        val menu = customToolbar.menu
+        
+        val allSelected = selectedContacts.size == allContacts.size && allContacts.isNotEmpty()
+        val noneSelected = selectedContacts.isEmpty()
+        
+        menu.findItem(R.id.select_all)?.isVisible = !allSelected && allContacts.isNotEmpty() && allowSelectMultiple
+        menu.findItem(R.id.deselect_all)?.isVisible = !noneSelected && allowSelectMultiple
+        menu.findItem(R.id.done)?.isVisible = allowSelectMultiple
+        
+        customToolbar.invalidateMenu()
     }
     
     private fun selectAll() {
