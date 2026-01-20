@@ -42,6 +42,8 @@ import org.joda.time.format.DateTimeFormat
 import java.util.Locale
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.net.toUri
+import com.goodwy.commons.extensions.setBackgroundColor
+import com.google.android.material.appbar.AppBarLayout
 
 class ViewContactActivity : ContactActivity() {
     private var isViewIntent = false
@@ -72,6 +74,33 @@ class ViewContactActivity : ContactActivity() {
         }
         setupMenu()
         initButton()
+
+        setupAppbarTransparency()
+    }
+
+    private fun setupAppbarTransparency() {
+        // Set backgrounds to transparent programmatically
+        binding.contactAppbar.background = null
+        binding.contactAppbar.setBackgroundColor(Color.TRANSPARENT)
+
+        // Disable scrims on CollapsingToolbarLayout
+        binding.collapsingToolbar.setContentScrim(null)
+        binding.collapsingToolbar.setStatusBarScrim(null)
+        binding.collapsingToolbar.background = null
+        binding.collapsingToolbar.setBackgroundColor(Color.TRANSPARENT)
+
+        // Add listener to prevent background changes during scroll
+        binding.contactAppbar.addOnOffsetChangedListener(
+            AppBarLayout.OnOffsetChangedListener { appBarLayout, verticalOffset ->
+                // Force transparent background at all scroll positions
+                appBarLayout.background = null
+                appBarLayout.setBackgroundColor(Color.TRANSPARENT)
+                binding.collapsingToolbar.setContentScrim(null)
+                binding.collapsingToolbar.setStatusBarScrim(null)
+                binding.collapsingToolbar.background = null
+                binding.collapsingToolbar.setBackgroundColor(Color.TRANSPARENT)
+            }
+        )
     }
 
     override fun onResume() {
@@ -104,25 +133,30 @@ class ViewContactActivity : ContactActivity() {
     }
 
     private fun initButton() {
+
         val properPrimaryColor = getProperPrimaryColor()
+        val buttonBackgroundColor = if ((isLightTheme() || isGrayTheme()) && !isDynamicTheme()) Color.WHITE else getSurfaceColor()
 
-        var drawableSMS = AppCompatResources.getDrawable(this, R.drawable.ic_messages)
-        drawableSMS = DrawableCompat.wrap(drawableSMS!!)
-        DrawableCompat.setTint(drawableSMS, properPrimaryColor)
-        DrawableCompat.setTintMode(drawableSMS, PorterDuff.Mode.SRC_IN)
-        binding.contactSendSms.setCompoundDrawablesWithIntrinsicBounds(null, drawableSMS, null, null)
-        binding.contactSendSms.setTextColor(properPrimaryColor)
+        // Set button background color based on theme
+        binding.contactSendSms.background?.mutate()?.setColorFilter(buttonBackgroundColor, PorterDuff.Mode.SRC_IN)
+        binding.contactStartCall.background?.mutate()?.setColorFilter(buttonBackgroundColor, PorterDuff.Mode.SRC_IN)
 
-        var drawableCall = AppCompatResources.getDrawable(this, com.goodwy.commons.R.drawable.ic_phone_vector)
-        drawableCall = DrawableCompat.wrap(drawableCall!!)
-        DrawableCompat.setTint(drawableCall, properPrimaryColor)
-        DrawableCompat.setTintMode(drawableCall, PorterDuff.Mode.SRC_IN)
-        binding.contactStartCall.setCompoundDrawablesWithIntrinsicBounds(null, drawableCall, null, null)
-        binding.contactStartCall.setTextColor(properPrimaryColor)
+        // Set icon color
+        binding.contactSendSms.setColorFilter(properPrimaryColor, PorterDuff.Mode.SRC_IN)
+        binding.contactStartCall.setColorFilter(properPrimaryColor, PorterDuff.Mode.SRC_IN)
 
     }
 
     private fun updateColors() {
+        // Set appbar background to transparent
+        binding.contactAppbar.setBackgroundColor(Color.TRANSPARENT)
+        binding.collapsingToolbar.setBackgroundColor(Color.TRANSPARENT)
+        // Ensure collapsing toolbar scrims stay transparent when collapsed
+        binding.collapsingToolbar.setContentScrim(null)
+        binding.collapsingToolbar.setStatusBarScrim(null)
+        // Set toolbar background to transparent
+        binding.contactToolbar.setBackgroundColor(Color.TRANSPARENT)
+        
         // Update background based on avatar color if contact is available
         if (contact != null) {
             val contactName = contact!!.getNameToDisplay()
@@ -134,33 +168,16 @@ class ViewContactActivity : ContactActivity() {
             
             // Update status bar color to match avatar color (with some transparency for better visibility)
             window.statusBarColor = avatarColor
-            
-            // Keep top view holder and collapsing toolbar with proper background
-            if (isLightTheme() && !isDynamicTheme()) {
-                val colorToWhite = getSurfaceColor()
-                supportActionBar?.setBackgroundDrawable(colorToWhite.toDrawable())
-                binding.topViewHolder.setBackgroundColor(colorToWhite)
-                binding.collapsingToolbar.setBackgroundColor(colorToWhite)
-            } else {
-                val properBackgroundColor = getProperBackgroundColor()
-                binding.topViewHolder.setBackgroundColor(properBackgroundColor)
-                binding.collapsingToolbar.setBackgroundColor(properBackgroundColor)
-            }
         } else {
             // Fallback to default colors when contact is not available
             if (isLightTheme() && !isDynamicTheme()) {
                 val colorToWhite = getSurfaceColor()
-                supportActionBar?.setBackgroundDrawable(colorToWhite.toDrawable())
                 window.decorView.setBackgroundColor(colorToWhite)
                 window.statusBarColor = colorToWhite
                 //window.navigationBarColor = colorToWhite
-                binding.topViewHolder.setBackgroundColor(colorToWhite)
-                binding.collapsingToolbar.setBackgroundColor(colorToWhite)
             } else {
                 val properBackgroundColor = getProperBackgroundColor()
                 window.decorView.setBackgroundColor(properBackgroundColor)
-                binding.topViewHolder.setBackgroundColor(properBackgroundColor)
-                binding.collapsingToolbar.setBackgroundColor(properBackgroundColor)
             }
         }
 
@@ -174,11 +191,11 @@ class ViewContactActivity : ContactActivity() {
     }
 
     override fun onBackPressed() {
-        if (binding.contactPhotoBig.alpha == 1f) {
-            hideBigContactPhoto()
-        } else {
+//        if (binding.contactPhotoBig.alpha == 1f) {
+//            hideBigContactPhoto()
+//        } else {
             super.onBackPressed()
-        }
+//        }
     }
 
     private fun setupMenu() {
@@ -317,20 +334,20 @@ class ViewContactActivity : ContactActivity() {
                 //.transform(FitCenter(), RoundedCorners(resources.getDimension(R.dimen.normal_margin).toInt()))
                 .transform(FitCenter())
 
-            Glide.with(this)
-                .load(contact!!.photo ?: currentContactPhotoPath)
-                .apply(optionsBig)
-                .into(binding.contactPhotoBig)
+//            Glide.with(this)
+//                .load(contact!!.photo ?: currentContactPhotoPath)
+//                .apply(optionsBig)
+//                .into(binding.contactPhotoBig)
+//
+//            binding.topDetails.contactPhoto.setOnClickListener {
+//                binding.contactPhotoBig.alpha = 0f
+//                binding.contactPhotoBig.beVisible()
+//                binding.contactPhotoBig.animate().alpha(1f).start()
+//            }
 
-            binding.topDetails.contactPhoto.setOnClickListener {
-                binding.contactPhotoBig.alpha = 0f
-                binding.contactPhotoBig.beVisible()
-                binding.contactPhotoBig.animate().alpha(1f).start()
-            }
-
-            binding.contactPhotoBig.setOnClickListener {
-                hideBigContactPhoto()
-            }
+//            binding.contactPhotoBig.setOnClickListener {
+//                hideBigContactPhoto()
+//            }
         }
 
         updateTextColors(binding.contactScrollview)
@@ -1443,9 +1460,9 @@ class ViewContactActivity : ContactActivity() {
     private fun getStarDrawable(on: Boolean) =
         resources.getDrawable(if (on) com.goodwy.commons.R.drawable.ic_star_vector else com.goodwy.commons.R.drawable.ic_star_outline_vector)
 
-    private fun hideBigContactPhoto() {
-        binding.contactPhotoBig.animate().alpha(0f).withEndAction { binding.contactPhotoBig.beGone() }.start()
-    }
+//    private fun hideBigContactPhoto() {
+//        binding.contactPhotoBig.animate().alpha(0f).withEndAction { binding.contactPhotoBig.beGone() }.start()
+//    }
 
     private fun View.copyOnLongClick(value: String) {
         setOnLongClickListener {
