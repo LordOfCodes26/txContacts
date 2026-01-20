@@ -82,7 +82,7 @@ open class MyAppBarLayout @JvmOverloads constructor(
         cachedCustomToolbar = null
     }
 
-    open fun requireToolbar(): MaterialToolbar =
+    fun requireToolbar(): MaterialToolbar =
         toolbar ?: error("MyAppBarLayout requires a Toolbar/MaterialToolbar child")
     
     open fun requireCustomToolbar(): CustomToolbar =

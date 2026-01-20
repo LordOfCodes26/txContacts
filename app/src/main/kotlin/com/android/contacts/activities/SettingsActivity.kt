@@ -30,6 +30,9 @@ import com.android.contacts.dialogs.ManageVisibleFieldsDialog
 import com.android.contacts.dialogs.ManageVisibleTabsDialog
 import com.android.contacts.extensions.*
 import com.android.contacts.helpers.*
+import com.android.contacts.helpers.ON_CLICK_CALL_CONTACT
+import com.android.contacts.helpers.ON_CLICK_VIEW_CONTACT
+import com.android.contacts.helpers.ON_CLICK_EDIT_CONTACT
 import com.android.contacts.helpers.VcfExporter
 import com.google.android.material.snackbar.Snackbar
 import com.mikhaellopez.rxanimation.RxAnimation
@@ -63,7 +66,7 @@ class SettingsActivity : SimpleActivity() {
     private var ignoredExportContactSources = HashSet<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        isMaterialActivity = true
+        // isMaterialActivity removed from commons library
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
         binding.apply {

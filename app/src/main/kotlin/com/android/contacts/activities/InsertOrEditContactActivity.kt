@@ -11,6 +11,8 @@ import android.provider.ContactsContract.CommonDataKinds.Email
 import android.provider.ContactsContract.CommonDataKinds.Phone
 import android.speech.RecognizerIntent
 import androidx.viewpager.widget.ViewPager
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.goodwy.commons.extensions.*
 import com.goodwy.commons.views.MyLiquidNavigationView
 import com.goodwy.commons.helpers.*
@@ -121,7 +123,7 @@ class InsertOrEditContactActivity : SimpleActivity(), RefreshContactsListener {
         val useSurfaceColor = isDynamicTheme() && !isSystemInDarkMode()
         val backgroundColor = if (useSurfaceColor) getSurfaceColor() else getProperBackgroundColor()
         binding.insertEditContactHolder.setBackgroundColor(backgroundColor)
-        updateStatusbarColor(backgroundColor)
+        window.setSystemBarsAppearance(backgroundColor)
         binding.insertEditMenu.updateColors(background = backgroundColor)
     }
 
@@ -231,12 +233,13 @@ class InsertOrEditContactActivity : SimpleActivity(), RefreshContactsListener {
             if (isDynamicTheme() && !isSystemInDarkMode()) getColoredMaterialStatusBarColor()
             else getSurfaceColor()
         binding.insertEditTabsHolder.setBackgroundColor(bottomBarColor)
-        if (binding.insertEditTabsHolder.tabCount != 1) updateNavigationBarColor(bottomBarColor)
-        else {
-            // TODO TRANSPARENT Navigation Bar
-            setWindowTransparency(true) { _, bottomNavigationBarSize, leftNavigationBarSize, rightNavigationBarSize ->
-                binding.insertEditCoordinator.setPadding(leftNavigationBarSize, 0, rightNavigationBarSize, 0)
-
+        window.setSystemBarsAppearance(bottomBarColor)
+        if (binding.insertEditTabsHolder.tabCount == 1) {
+            // Handle transparent navigation bar with window insets
+            ViewCompat.setOnApplyWindowInsetsListener(binding.insertEditCoordinator) { view, insets ->
+                val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+                view.setPadding(systemBars.left, 0, systemBars.right, 0)
+                insets
             }
         }
     }

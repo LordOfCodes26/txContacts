@@ -423,20 +423,3 @@ fun Context.unblockContact(contact: Contact): Boolean {
 
     return contactUnblocked
 }
-
-/**
- * Inserts a contact into the system ContactsProvider that is hidden from the main contacts list
- * but still appears in search results (Contacts app or Dialer).
- * 
- * @param contact The contact to insert
- * @param hiddenAccountName Custom account name for hidden contacts (default: "Hidden Contacts")
- * @param hiddenAccountType Custom account type for hidden contacts (default: "com.goodwy.contacts.hidden")
- * @return true if the contact was successfully inserted, false otherwise
- */
-fun Context.insertHiddenContact(
-    contact: Contact,
-    hiddenAccountName: String = "Hidden Contacts",
-    hiddenAccountType: String = "com.goodwy.contacts.hidden"
-): Boolean {
-    return ContactsHelper(this).insertHiddenContact(contact, hiddenAccountName, hiddenAccountType)
-}

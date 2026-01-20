@@ -3,6 +3,8 @@ package com.android.contacts.helpers
 import android.content.Context
 import com.goodwy.commons.helpers.BaseConfig
 import com.goodwy.commons.helpers.SHOW_TABS
+import com.android.contacts.helpers.ON_CONTACT_CLICK
+import com.android.contacts.helpers.ON_CLICK_EDIT_CONTACT
 
 class Config(context: Context) : BaseConfig(context) {
     companion object {
@@ -34,4 +36,8 @@ class Config(context: Context) : BaseConfig(context) {
     var swipeRipple: Boolean
         get() = prefs.getBoolean(SWIPE_RIPPLE, false)
         set(swipeRipple) = prefs.edit().putBoolean(SWIPE_RIPPLE, swipeRipple).apply()
+
+    var onContactClick: Int
+        get() = prefs.getInt(ON_CONTACT_CLICK, ON_CLICK_EDIT_CONTACT)
+        set(onContactClick) = prefs.edit().putInt(ON_CONTACT_CLICK, onContactClick).apply()
 }

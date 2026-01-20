@@ -594,10 +594,6 @@ open class BaseConfig(val context: Context) {
         get() = prefs.getString(LAST_USED_CONTACT_SOURCE, "")!!
         set(lastUsedContactSource) = prefs.edit { putString(LAST_USED_CONTACT_SOURCE, lastUsedContactSource) }
 
-    var onContactClick: Int
-        get() = prefs.getInt(ON_CONTACT_CLICK, 1)
-        set(onContactClick) = prefs.edit { putInt(ON_CONTACT_CLICK, onContactClick) }
-
     var showContactFields: Int
         get() = prefs.getInt(
             SHOW_CONTACT_FIELDS,
@@ -608,7 +604,7 @@ open class BaseConfig(val context: Context) {
         set(showContactFields) = prefs.edit { putInt(SHOW_CONTACT_FIELDS, showContactFields) }
 
     var showDialpadButton: Boolean
-        get() = prefs.getBoolean(SHOW_DIALPAD_BUTTON, false)
+        get() = prefs.getBoolean(SHOW_DIALPAD_BUTTON, true)
         set(showDialpadButton) = prefs.edit { putBoolean(SHOW_DIALPAD_BUTTON, showDialpadButton) }
 
     var wasLocalAccountInitialized: Boolean
@@ -690,7 +686,6 @@ open class BaseConfig(val context: Context) {
         set(showCheckmarksOnSwitches) = prefs.edit { putBoolean(SHOW_CHECKMARKS_ON_SWITCHES, showCheckmarksOnSwitches) }
 
     var showCheckmarksOnSwitchesFlow = ::showCheckmarksOnSwitches.asFlowNonNull()
-
 
     protected fun <T> KProperty0<T>.asFlow(emitOnCollect: Boolean = false): Flow<T?> =
         prefs.run { sharedPreferencesCallback(sendOnCollect = emitOnCollect) { this@asFlow.get() } }

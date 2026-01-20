@@ -7,6 +7,8 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import androidx.coordinatorlayout.widget.CoordinatorLayout
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.goodwy.commons.dialogs.ConfirmationDialog
 import com.goodwy.commons.extensions.*
 import eightbitlab.com.blurview.BlurTarget
@@ -82,6 +84,7 @@ class GroupContactsActivity : SimpleActivity(), RemoveFromGroupListener, Refresh
 
         val properBackgroundColor = if (isDynamicTheme() && !isSystemInDarkMode()) getSurfaceColor() else getProperBackgroundColor()
         setupTopAppBar(binding.groupContactsAppbar, NavigationIcon.Arrow, topBarColor = properBackgroundColor)
+        val navigationBarHeight = ViewCompat.getRootWindowInsets(window.decorView)?.getInsets(WindowInsetsCompat.Type.navigationBars())?.bottom ?: 0
         (binding.groupContactsFab.layoutParams as CoordinatorLayout.LayoutParams).bottomMargin =
             navigationBarHeight + resources.getDimension(com.goodwy.commons.R.dimen.activity_margin).toInt()
     }

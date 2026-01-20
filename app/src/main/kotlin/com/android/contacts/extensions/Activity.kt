@@ -27,6 +27,9 @@ import com.android.contacts.activities.ViewContactActivity
 import com.android.contacts.dialogs.ImportContactsDialog
 import com.android.contacts.helpers.DEFAULT_FILE_NAME
 import com.android.contacts.helpers.VcfExporter
+import com.android.contacts.helpers.ON_CLICK_CALL_CONTACT
+import com.android.contacts.helpers.ON_CLICK_VIEW_CONTACT
+import com.android.contacts.helpers.ON_CLICK_EDIT_CONTACT
 import androidx.core.net.toUri
 
 fun SimpleActivity.startCallIntent(recipient: String) {

@@ -16,6 +16,7 @@
     <dimen name="min_radio_checkbox_height">44dp</dimen>
     <dimen name="settings_margin">8dp</dimen>
     <dimen name="about_margin">20dp</dimen>
+    <dimen name="dialpad_bottom_margin">50dp</dimen>
 
     <dimen name="material_dialog_corner_radius">28dp</dimen>
     <dimen name="dialog_corner_radius">24dp</dimen>

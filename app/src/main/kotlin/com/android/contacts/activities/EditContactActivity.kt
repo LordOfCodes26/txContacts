@@ -27,6 +27,7 @@ import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.net.toUri
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.widget.doAfterTextChanged
 import com.goodwy.commons.dialogs.ConfirmationAdvancedDialog
@@ -393,6 +394,8 @@ class EditContactActivity : ContactActivity() {
         val contrastColor = getProperBackgroundColor().getContrastColor()
         val primaryColor = getProperPrimaryColor()
         val iconColor = if (baseConfig.topAppBarColorIcon) primaryColor else contrastColor
+        // Get status bar height from window insets
+        val statusBarHeight = ViewCompat.getRootWindowInsets(window.decorView)?.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars())?.top ?: 0
         //(binding.contactAppbar.layoutParams as RelativeLayout.LayoutParams).topMargin = statusBarHeight
         (binding.contactWrapper.layoutParams as FrameLayout.LayoutParams).topMargin = statusBarHeight
         binding.contactToolbar.overflowIcon = resources.getColoredDrawableWithColor(com.goodwy.commons.R.drawable.ic_three_dots_vector, iconColor)

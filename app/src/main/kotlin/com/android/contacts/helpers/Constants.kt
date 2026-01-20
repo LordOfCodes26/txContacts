@@ -99,3 +99,9 @@ const val SWIPE_ACTION_MESSAGE = 6
 const val SWIPE_ACTION_EDIT = 7
 const val SWIPE_VIBRATION = "swipe_vibration"
 const val SWIPE_RIPPLE = "swipe_ripple"
+
+// On contact click actions
+const val ON_CLICK_CALL_CONTACT = 0
+const val ON_CLICK_VIEW_CONTACT = 1
+const val ON_CLICK_EDIT_CONTACT = 2
+const val ON_CONTACT_CLICK = "on_contact_click"

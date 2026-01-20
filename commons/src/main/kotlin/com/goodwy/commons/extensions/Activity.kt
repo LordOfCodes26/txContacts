@@ -12,7 +12,6 @@ import android.content.pm.PackageManager
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.*
-import android.os.Build
 import android.provider.ContactsContract
 import android.provider.DocumentsContract
 import android.provider.MediaStore
@@ -24,7 +23,11 @@ import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
+import android.graphics.Color
 import android.widget.EditText
+import android.widget.FrameLayout
+import android.widget.ProgressBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
@@ -50,6 +53,7 @@ import eightbitlab.com.blurview.BlurTarget
 import java.io.*
 import java.util.Locale
 import java.util.TreeSet
+import java.util.WeakHashMap
 import androidx.core.net.toUri
 
 fun Activity.appLaunched(appId: String) {
@@ -1853,88 +1857,75 @@ fun Activity.isSpeechToTextAvailable(): Boolean {
     return activities.isNotEmpty()
 }
 
-// Extension properties for status and navigation bar heights
-val Activity.statusBarHeight: Int
-    get() {
-        val resourceId = resources.getIdentifier("status_bar_height", "dimen", "android")
-        return if (resourceId > 0) resources.getDimensionPixelSize(resourceId) else 0
+private val blockingOverlayViews = WeakHashMap<Activity, View>()
+
+fun Activity.showBlockingSpinnerOverlay(message: String = "") {
+    if (isFinishing || isDestroyed) return
+    
+    runOnUiThread {
+        if (blockingOverlayViews.containsKey(this@showBlockingSpinnerOverlay)) {
+            return@runOnUiThread
+        }
+        
+        val rootView = window.decorView.rootView as? ViewGroup ?: return@runOnUiThread
+        val overlayColor = getProperBackgroundColor()
+        val textColor = getProperTextColor()
+        
+        val overlay = FrameLayout(this).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+            setBackgroundColor(overlayColor.adjustAlpha(0.9f))
+            isClickable = true
+            isFocusable = true
+            setOnTouchListener { _, _ -> true } // Block all touch events
+        }
+        
+        val container = FrameLayout(this).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                gravity = android.view.Gravity.CENTER
+            }
+        }
+        
+        val progressBar = ProgressBar(this, null, android.R.attr.progressBarStyleLarge).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+        container.addView(progressBar)
+        
+        if (message.isNotEmpty()) {
+            val textView = TextView(this).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    topMargin = resources.getDimensionPixelSize(R.dimen.activity_margin)
+                }
+                text = message
+                setTextColor(textColor)
+                textSize = 16f
+                gravity = android.view.Gravity.CENTER
+            }
+            container.addView(textView)
+        }
+        
+        overlay.addView(container)
+        rootView.addView(overlay)
+        blockingOverlayViews[this@showBlockingSpinnerOverlay] = overlay
     }
+}
 
-val Activity.navigationBarHeight: Int
-    get() {
-        val resourceId = resources.getIdentifier("navigation_bar_height", "dimen", "android")
-        return if (resourceId > 0) resources.getDimensionPixelSize(resourceId) else 0
-    }
-
-// Extension functions for material activity views
-fun BaseSimpleActivity.updateMaterialActivityViews(
-    mainCoordinatorLayout: ViewGroup? = null,
-    nestedView: View? = null,
-    useTransparentNavigation: Boolean = false,
-    useTopSearchMenu: Boolean = false
-) {
-    // Stub implementation - can be enhanced later
-    if (mainCoordinatorLayout != null) {
-        setupEdgeToEdge(
-            padTopSystem = listOf(mainCoordinatorLayout),
-            padBottomSystem = if (useTransparentNavigation) listOf(mainCoordinatorLayout) else emptyList()
-        )
+fun Activity.hideBlockingSpinnerOverlay() {
+    runOnUiThread {
+        blockingOverlayViews.remove(this@hideBlockingSpinnerOverlay)?.let { overlay ->
+            val rootView = window.decorView.rootView as? ViewGroup
+            rootView?.removeView(overlay)
+        }
     }
 }
-
-fun BaseSimpleActivity.updateMaterialActivityViews(
-    coordinator: ViewGroup,
-    holder: ViewGroup,
-    useTransparentNavigation: Boolean = false,
-    useTopSearchMenu: Boolean = false
-) {
-    setupEdgeToEdge(
-        padTopSystem = listOf(coordinator),
-        padBottomSystem = if (useTransparentNavigation) listOf(coordinator) else emptyList()
-    )
-}
-
-fun BaseSimpleActivity.setWindowTransparency(
-    enabled: Boolean,
-    callback: (window: Window, bottomNavigationBarSize: Int, leftNavigationBarSize: Int, rightNavigationBarSize: Int) -> Unit
-) {
-    if (enabled) {
-        val insets = window.decorView.rootWindowInsets
-        val systemBars = insets?.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
-        val bottom = systemBars?.bottom ?: 0
-        val left = systemBars?.left ?: 0
-        val right = systemBars?.right ?: 0
-        callback(window, bottom, left, right)
-    }
-}
-
-fun BaseSimpleActivity.updateStatusbarColor(color: Int) {
-    window.statusBarColor = color
-}
-
-fun BaseSimpleActivity.updateNavigationBarColor(color: Int) {
-    window.navigationBarColor = color
-}
-
-// Helper function to get blurTarget
-fun Activity.getBlurTarget(): BlurTarget {
-    return findViewById<BlurTarget>(R.id.mainBlurTarget)
-        ?: throw IllegalStateException("mainBlurTarget not found")
-}
-
-// Stub functions for missing references
-fun Activity.isNougatMR1Plus(): Boolean {
-    return Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1
-}
-
-// showPrivateContacts is a property on config object, not Activity extension
-
-// Stub for onContactClick - should be implemented in activities
-fun Activity.onContactClick(contact: com.goodwy.commons.models.contacts.Contact, action: String, blurTarget: BlurTarget) {
-    // Stub implementation
-}
-
-// Constants for contact click actions (Int values for config)
-const val ON_CLICK_CALL_CONTACT = 0
-const val ON_CLICK_VIEW_CONTACT = 1
-const val ON_CLICK_EDIT_CONTACT = 2

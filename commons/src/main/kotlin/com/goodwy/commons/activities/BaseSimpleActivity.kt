@@ -64,9 +64,6 @@ abstract class BaseSimpleActivity : EdgeToEdgeActivity() {
     var useChangeAutoTheme = true
     var checkedDocumentPath = ""
     var configItemsToExport = LinkedHashMap<String, Any>()
-    var isMaterialActivity = false // by material activity we mean translucent navigation bar and opaque status and action bars
-    var showTransparentTop = false
-    var updateNavigationBarColor = true
 
     private lateinit var backCallback: OnBackPressedCallback
 
@@ -234,15 +231,29 @@ abstract class BaseSimpleActivity : EdgeToEdgeActivity() {
                 R.drawable.ic_chevron_left_vector
             }
 
-            topAppBar.toolbar?.navigationIcon =
-                resources.getColoredDrawableWithColor(drawableId, contrastColor)
-            topAppBar.toolbar?.setNavigationContentDescription(navigationIcon.accessibilityResId)
+            // Handle MaterialToolbar
+            topAppBar.toolbar?.let { toolbar ->
+                toolbar.navigationIcon =
+                    resources.getColoredDrawableWithColor(drawableId, contrastColor)
+                toolbar.setNavigationContentDescription(navigationIcon.accessibilityResId)
+            }
+            
+            // Handle CustomToolbar
+            topAppBar.customToolbar?.let { toolbar ->
+                toolbar.navigationIcon =
+                    resources.getColoredDrawableWithColor(drawableId, contrastColor)
+                toolbar.setNavigationContentDescription(navigationIcon.accessibilityResId)
+            }
         }
 
         updateTopBarColors(topAppBar, topBarColor)
 
         if (navigationClick) {
             topAppBar.toolbar?.setNavigationOnClickListener {
+                hideKeyboard()
+                finish()
+            }
+            topAppBar.customToolbar?.setNavigationOnClickListener {
                 hideKeyboard()
                 finish()
             }

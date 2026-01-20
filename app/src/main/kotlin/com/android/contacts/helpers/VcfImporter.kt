@@ -17,7 +17,6 @@ import android.os.Handler
 import android.os.Looper
 import com.goodwy.commons.extensions.getCachePhoto
 import com.goodwy.commons.extensions.groupsDB
-import com.goodwy.commons.extensions.insertHiddenContact
 import com.goodwy.commons.extensions.normalizePhoneNumber
 import com.goodwy.commons.extensions.showErrorToast
 import com.goodwy.commons.extensions.toast
@@ -83,7 +82,7 @@ class VcfImporter(val activity: SimpleActivity) {
                 for (ezContact in ezContacts) {
                     try {
                         val contact = parseVCardToContact(context, ezContact, "")
-                        val success = context.insertHiddenContact(contact)
+                        val success = ContactsHelper(context).insertHiddenContact(contact)
                         if (success) {
                             contactsImported.add(true)
                         } else {
@@ -482,7 +481,7 @@ class VcfImporter(val activity: SimpleActivity) {
                 }
 
                 val success = if (importAsHidden) {
-                    activity.insertHiddenContact(contact)
+                    ContactsHelper(activity).insertHiddenContact(contact)
                 } else {
                     ContactsHelper(activity).insertContact(contact)
                 }

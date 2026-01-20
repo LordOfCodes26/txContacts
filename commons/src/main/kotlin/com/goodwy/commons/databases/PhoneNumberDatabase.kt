@@ -14,8 +14,6 @@ import com.goodwy.commons.interfaces.PhonePrefixLocationDao
 import com.goodwy.commons.models.PhoneDistrict
 import com.goodwy.commons.models.PhoneNumberFormat
 import com.goodwy.commons.models.PhonePrefixLocation
-import kotlin.jvm.java
-import kotlin.text.trimIndent
 
 @Database(entities = [PhonePrefixLocation::class, PhoneDistrict::class, PhoneNumberFormat::class], version = 6, exportSchema = true)
 @TypeConverters(Converters::class)
@@ -31,19 +29,9 @@ abstract class PhoneNumberDatabase : RoomDatabase() {
         fun getInstance(context: Context): PhoneNumberDatabase {
             synchronized(PhoneNumberDatabase::class) {
                 if (db == null) {
-                    db = Room.databaseBuilder(
-                        context.applicationContext,
-                        PhoneNumberDatabase::class.java,
-                        "phone_number.db"
-                    )
+                    db = Room.databaseBuilder(context.applicationContext, PhoneNumberDatabase::class.java, "phone_number.db")
                         .fallbackToDestructiveMigration()
-                        .addMigrations(
-                            MIGRATION_1_2,
-                            MIGRATION_2_3,
-                            MIGRATION_3_4,
-                            MIGRATION_4_5,
-                            MIGRATION_5_6
-                        )
+                        .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                         .allowMainThreadQueries() // Allow queries on main thread for formatting (formats are cached anyway)
                         .build()
                 }

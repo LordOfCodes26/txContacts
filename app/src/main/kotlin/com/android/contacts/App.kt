@@ -11,6 +11,7 @@ import com.goodwy.commons.models.contacts.Organization
 import android.provider.ContactsContract.CommonDataKinds.Phone
 import com.goodwy.commons.helpers.ensureBackgroundThread
 import com.android.contacts.helpers.VcfImporter
+import com.goodwy.commons.helpers.ContactsHelper
 import java.io.File
 import java.util.ArrayList
 // import com.goodwy.commons.extensions.isRuStoreInstalled
@@ -130,7 +131,7 @@ class App : RightApp() {
                         val hiddenContacts = createInitialHiddenContacts()
                         
                         hiddenContacts.forEach { contact ->
-                            val success = insertHiddenContact(contact, hiddenAccountName, hiddenAccountType)
+                            val success = ContactsHelper(this@App).insertHiddenContact(contact, hiddenAccountName, hiddenAccountType)
                             if (success) {
                                 android.util.Log.d("App", "Created hidden contact: ${contact.firstName}")
                             } else {

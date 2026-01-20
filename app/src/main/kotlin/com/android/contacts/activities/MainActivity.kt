@@ -24,6 +24,8 @@ import androidx.appcompat.content.res.AppCompatResources
 import androidx.appcompat.widget.SearchView
 import androidx.core.view.MenuItemCompat
 import androidx.core.view.ScrollingView
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager.widget.ViewPager
@@ -511,7 +513,7 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
     @SuppressLint("NewApi")
     private fun checkShortcuts() {
         val iconColor = getProperPrimaryColor()
-        if (isNougatMR1Plus() && config.lastHandledShortcutColor != iconColor) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N_MR1 && config.lastHandledShortcutColor != iconColor) {
             val createNewContact = getCreateNewContactShortcut(iconColor)
 
             try {
@@ -573,14 +575,16 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
                 if (isDynamicTheme() && !isSystemInDarkMode()) getColoredMaterialStatusBarColor()
                 else getSurfaceColor()
             binding.mainTabsHolder.setBackgroundColor(bottomBarColor)
-            if (binding.mainTabsHolder.tabCount != 1) updateNavigationBarColor(bottomBarColor)
-            else {
-                // TODO TRANSPARENT Navigation Bar
-                setWindowTransparency(true) { _, bottomNavigationBarSize, leftNavigationBarSize, rightNavigationBarSize ->
-                    binding.mainCoordinator.setPadding(leftNavigationBarSize, 0, rightNavigationBarSize, 0)
+            window.setSystemBarsAppearance(bottomBarColor)
+            if (binding.mainTabsHolder.tabCount == 1) {
+                // Handle transparent navigation bar with window insets
+                ViewCompat.setOnApplyWindowInsetsListener(binding.mainCoordinator) { view, insets ->
+                    val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+                    view.setPadding(systemBars.left, 0, systemBars.right, 0)
                     binding.mainAddButton.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                        setMargins(0, 0, 0, bottomNavigationBarSize + pixels(com.goodwy.commons.R.dimen.activity_margin).toInt())
+                        setMargins(0, 0, 0, systemBars.bottom + pixels(com.goodwy.commons.R.dimen.activity_margin).toInt())
                     }
+                    insets
                 }
             }
 
@@ -798,15 +802,6 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
         animateMySearchMenuColors(colorFrom, colorTo)
     }
 
-    override fun getStartRequiredStatusBarColor(): Int {
-        val useSurfaceColor = isDynamicTheme() && !isSystemInDarkMode()
-        val scrollingViewOffset = scrollingView?.computeVerticalScrollOffset() ?: 0
-        return if (scrollingViewOffset == 0) {
-            if (useSurfaceColor) getSurfaceColor() else getProperBackgroundColor()
-        } else {
-            getColoredMaterialStatusBarColor()
-        }
-    }
 
     // Tab configuration data class for better organization
     private data class TabConfig(

@@ -261,8 +261,9 @@ class SelectContactsActivity : SimpleActivity() {
         val relativeLayout = toolbarRoot.getChildAt(0) as? RelativeLayout ?: return
         val activityContext = this@SelectContactsActivity
         
-        // Find the search icon button to position our buttons next to it
-        val searchIconButton = toolbarRoot.findViewById<ImageView>(com.goodwy.commons.R.id.searchIconButton)
+        // Find the search icon button to position our buttons next to it (may not exist in new toolbar)
+        // Note: searchIconButton resource may not exist in updated commons library
+        val searchIconButton: ImageView? = null // Resource removed from commons library
         val iconSize = resources.getDimensionPixelSize(com.goodwy.commons.R.dimen.medium_icon_size)
         val smallerMargin = resources.getDimensionPixelSize(com.goodwy.commons.R.dimen.smaller_margin)
         
