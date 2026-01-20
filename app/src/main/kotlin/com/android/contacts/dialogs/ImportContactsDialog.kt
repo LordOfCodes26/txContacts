@@ -88,13 +88,12 @@ class ImportContactsDialog(val activity: SimpleActivity, val path: String, blurT
                 }
 
                 ignoreClicks = true
+                // Dismiss dialog immediately when import starts
+                dialog?.dismiss()
                 activity.toast(com.goodwy.commons.R.string.importing)
                 ensureBackgroundThread {
                     val result = VcfImporter(activity).importContacts(path, targetContactSource)
                     handleParseResult(result)
-                    activity.runOnUiThread {
-                        dialog?.dismiss()
-                    }
                 }
             }
         }

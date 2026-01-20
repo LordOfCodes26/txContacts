@@ -61,7 +61,7 @@ abstract class ContactActivity : SimpleActivity() {
 
     abstract fun systemRingtoneSelected(uri: Uri?)
 
-    fun showPhotoPlaceholder(photoView: ImageView) {
+    open fun showPhotoPlaceholder(photoView: ImageView) {
         val fullName = contact?.getNameToDisplay() ?: "A"
         val placeholderImage =
             if (contact?.isABusinessContact() == true) {

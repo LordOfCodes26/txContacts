@@ -27,6 +27,7 @@ import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.net.toUri
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.widget.doAfterTextChanged
@@ -108,6 +109,9 @@ class EditContactActivity : ContactActivity() {
         if (checkAppSideloading()) {
             return
         }
+        setupEdgeToEdge(
+            padTopSystem = listOf(binding.topDetails.root)
+        )
 
         surfaceColor = if ((isLightTheme() || isGrayTheme()) && !isDynamicTheme()) Color.WHITE else getSurfaceColor()
         binding.contactWrapper.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
@@ -394,10 +398,33 @@ class EditContactActivity : ContactActivity() {
         val contrastColor = getProperBackgroundColor().getContrastColor()
         val primaryColor = getProperPrimaryColor()
         val iconColor = if (baseConfig.topAppBarColorIcon) primaryColor else contrastColor
-        // Get status bar height from window insets
-        val statusBarHeight = ViewCompat.getRootWindowInsets(window.decorView)?.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars())?.top ?: 0
-        //(binding.contactAppbar.layoutParams as RelativeLayout.LayoutParams).topMargin = statusBarHeight
-        (binding.contactWrapper.layoutParams as FrameLayout.LayoutParams).topMargin = statusBarHeight
+        
+        // Apply status bar top padding using window insets listener
+        ViewCompat.setOnApplyWindowInsetsListener(binding.contactAppbar) { view, insets ->
+            val statusBarInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars())
+            view.setPadding(
+                view.paddingLeft,
+                statusBarInsets.top,
+                view.paddingRight,
+                view.paddingBottom
+            )
+            insets
+        }
+        
+        // Also try to set initial padding if insets are already available
+        binding.contactAppbar.post {
+            val statusBarHeight = ViewCompat.getRootWindowInsets(window.decorView)
+                ?.getInsets(WindowInsetsCompat.Type.statusBars())?.top ?: 0
+            if (statusBarHeight > 0) {
+                binding.contactAppbar.setPadding(
+                    binding.contactAppbar.paddingLeft,
+                    statusBarHeight,
+                    binding.contactAppbar.paddingRight,
+                    binding.contactAppbar.paddingBottom
+                )
+            }
+        }
+        
         binding.contactToolbar.overflowIcon = resources.getColoredDrawableWithColor(com.goodwy.commons.R.drawable.ic_three_dots_vector, iconColor)
         binding.contactToolbar.menu.apply {
             updateMenuItemColors(this)
@@ -756,13 +783,7 @@ class EditContactActivity : ContactActivity() {
             }
 
             structuredAddressHolder.apply {
-                contactStreet.setText(address.street)
-                contactNeighborhood.setText(address.neighborhood)
-                contactCity.setText(address.city)
-                contactPostcode.setText(address.postcode)
-                contactPobox.setText(address.pobox)
-                contactRegion.setText(address.region)
-                contactCountry.setText(address.country)
+                contactAddress.setText(address.value)
                 setupAddressTypePicker(contactStructuredAddressType, address.type, address.label)
 
                 val getProperTextColor = getProperTextColor()
@@ -1640,31 +1661,25 @@ class EditContactActivity : ContactActivity() {
         for (i in 0 until addressesCount) {
             val addressHolderView = binding.contactAddressesHolder.getChildAt(i)
             val structuredAddressHolder = ItemEditStructuredAddressBinding.bind(addressHolderView)
-            val street = structuredAddressHolder.contactStreet.value
-            val neighborhood = structuredAddressHolder.contactNeighborhood.value
-            val city = structuredAddressHolder.contactCity.value
-            val postcode = structuredAddressHolder.contactPostcode.value
-            val pobox = structuredAddressHolder.contactPobox.value
-            val region = structuredAddressHolder.contactRegion.value
-            val country = structuredAddressHolder.contactCountry.value
-
-            /* from DAVdroid */
-            val lineStreet = arrayOf(street, pobox, neighborhood).filterNot { it.isEmpty() }.joinToString(" ")
-            val lineLocality = arrayOf(postcode, city).filterNot { it.isEmpty() }.joinToString(" ")
-            val lines = LinkedList<String>()
-            if (lineStreet.isNotEmpty()) lines += lineStreet
-            if (lineLocality.isNotEmpty()) lines += lineLocality
-            if (region.isNotEmpty()) lines += region
-            if (country.isNotEmpty()) lines += country.uppercase(Locale.getDefault())
-            val address  = lines.joinToString("\n")
+            val addressValue = structuredAddressHolder.contactAddress.value.trim()
             val addressType = getAddressTypeId(structuredAddressHolder.contactStructuredAddressType.value)
             val addressLabel =
                 if (addressType == StructuredPostal.TYPE_CUSTOM) structuredAddressHolder.contactStructuredAddressType.value
                 else ""
 
-            if (address.isNotEmpty()) {
-                addresses.add(Address(address, addressType, addressLabel, country, region, city, postcode, pobox,
-                    street, neighborhood))
+            if (addressValue.isNotEmpty()) {
+                addresses.add(Address(
+                    value = addressValue,
+                    type = addressType,
+                    label = addressLabel,
+                    country = "",
+                    region = "",
+                    city = "",
+                    postcode = "",
+                    pobox = "",
+                    street = "",
+                    neighborhood = ""
+                ))
             }
         }
         return addresses
@@ -2136,6 +2151,19 @@ class EditContactActivity : ContactActivity() {
             } catch (e: Exception) {
                 showErrorToast(e)
             }
+        }
+    }
+
+    override fun showPhotoPlaceholder(photoView: ImageView) {
+        // Use default placeholder image for new contacts (id == 0), letter avatar for existing contacts
+        if (contact?.id == 0) {
+            val placeholderDrawable = AppCompatResources.getDrawable(this, com.goodwy.commons.R.drawable.placeholder_contact)
+            photoView.setImageDrawable(placeholderDrawable)
+            currentContactPhotoPath = ""
+            contact?.photo = null
+        } else {
+            // Use parent implementation (letter avatar) for existing contacts
+            super.showPhotoPlaceholder(photoView)
         }
     }
 

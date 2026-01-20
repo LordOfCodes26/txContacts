@@ -81,6 +81,6 @@ class EditContactsTopBehavior(
 
 
     companion object {
-        const val GONE_VIEW_THRESHOLD = 0.8f
+        const val GONE_VIEW_THRESHOLD = 0.4f
     }
 }

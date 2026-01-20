@@ -68,6 +68,10 @@
     <string name="show_only_contacts_with_numbers">Show only contacts with phone numbers</string>
     <string name="show_private_contacts">Show private contacts to Fossify Phone, Fossify SMS Messenger and Fossify Calendar</string>
     <string name="merge_duplicate_contacts">Merge duplicate contacts</string>
+    <string name="merge_all_duplicate_contacts">Merge all duplicate contacts</string>
+    <string name="merge_all_duplicate_contacts_confirmation">This will merge all duplicate contacts in your database. Duplicate contacts with the same name will be combined into one contact. This action cannot be undone. Continue?</string>
+    <string name="merged_contacts_message">Merged %1$d contact groups and deleted %2$d duplicate contacts.</string>
+    <string name="no_duplicate_contacts_found">No duplicate contacts found.</string>
 
     <!-- Favorites -->
     <string name="no_favorites">Seems like you haven\'t added any favorite contacts yet.</string>

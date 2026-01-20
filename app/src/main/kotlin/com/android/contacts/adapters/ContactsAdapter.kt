@@ -516,9 +516,6 @@ class ContactsAdapter(
             return
         }
 
-        val blurTarget = activity.findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
-            ?: throw IllegalStateException("mainBlurTarget not found")
-
         // Generate filename based on selected contacts
         val filename = if (selectedContacts.size == 1) {
             selectedContacts.first().getNameToDisplay()
@@ -548,6 +545,10 @@ class ContactsAdapter(
             }
         } else {
             // Use file picker for older Android versions
+            // blurTarget is only needed for FilePickerDialog, so check it here
+            val blurTarget = activity.findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+                ?: throw IllegalStateException("mainBlurTarget not found")
+            
             activity.handlePermission(PERMISSION_WRITE_STORAGE) {
                 if (it) {
                     val exportPath = activity.config.lastExportPath.ifEmpty { activity.internalStoragePath }
