@@ -53,6 +53,7 @@
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
             android:paddingStart="@dimen/normal_margin"
+            android:visibility="gone"
             android:textAppearance="@style/LetterFastscrollerStyleSmall"
             tools:ignore="RtlSymmetry" />
 

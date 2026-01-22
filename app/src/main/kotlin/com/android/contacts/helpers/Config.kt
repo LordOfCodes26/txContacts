@@ -38,6 +38,6 @@ class Config(context: Context) : BaseConfig(context) {
         set(swipeRipple) = prefs.edit().putBoolean(SWIPE_RIPPLE, swipeRipple).apply()
 
     var onContactClick: Int
-        get() = prefs.getInt(ON_CONTACT_CLICK, ON_CLICK_EDIT_CONTACT)
+        get() = prefs.getInt(ON_CONTACT_CLICK, ON_CLICK_VIEW_CONTACT)
         set(onContactClick) = prefs.edit().putInt(ON_CONTACT_CLICK, onContactClick).apply()
 }

@@ -161,13 +161,14 @@ class ViewContactActivity : ContactActivity() {
         if (contact != null) {
             val contactName = contact!!.getNameToDisplay()
             val avatarColor = getAvatarColorForName(contactName)
-            val gradientDrawable = createAvatarGradientDrawable(avatarColor)
+            val avatarColorIndex = getAvatarColorIndexForName(contactName)
+            val gradientDrawable = createAvatarGradientDrawable(avatarColorIndex)
             
-            binding.contactWrapper.background = gradientDrawable
+//            binding.contactWrapper.background = gradientDrawable
             window.decorView.background = gradientDrawable
             
             // Update status bar color to match avatar color (with some transparency for better visibility)
-            window.statusBarColor = avatarColor
+//            window.statusBarColor = avatarColor
         } else {
             // Fallback to default colors when contact is not available
             if (isLightTheme() && !isDynamicTheme()) {

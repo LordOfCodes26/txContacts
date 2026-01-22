@@ -509,7 +509,7 @@ fun getCurrentFormattedDateTime(): String {
 }
 
 fun Context.updateSDCardPath() {
-        ensureBackgroundThread {
+    ensureBackgroundThread {
         val oldPath = baseConfig.sdCardPath
         baseConfig.sdCardPath = getSDCardPath()
         if (oldPath != baseConfig.sdCardPath) {
@@ -1466,7 +1466,7 @@ fun Context.sendSMSPendingIntent(recipient: String): PendingIntent {
 fun Context.getLetterBackgroundColors(): ArrayList<Long> {
     return when (baseConfig.contactColorList) {
         LBC_ORIGINAL -> letterBackgroundColors
-        LBC_IOS -> letterBackgroundColorsIOS
+        LBC_IOS ->  if (!isSystemInDarkMode()) letterBackgroundColorsIOS else letterBackgroundColorsIOSDark
         LBC_ARC -> letterBackgroundColorsArc
         else -> letterBackgroundColorsAndroid
     }

@@ -58,6 +58,7 @@
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
                     android:paddingTop="@dimen/bigger_margin"
+                    android:visibility="gone"
                     android:textAppearance="@style/LetterFastscrollerStyleSmall" />
 
                 <com.reddit.indicatorfastscroll.FastScrollerThumbView
