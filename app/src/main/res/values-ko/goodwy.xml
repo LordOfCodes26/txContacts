@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name_g">주소록</string>
+
+    <!-- Visible fields -->
+    <string name="messengers_actions_g">통보문 동작</string>
+
+    <!-- Settings -->
+    <string name="ringtone_for_private_contact">종소리는 개인 주소록에 사용할수 없습니다.</string>
+    <string name="show_private_contacts_g">전화기 및 통보문에 개인 주소록 표시</string>
+
+</resources>
