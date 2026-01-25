@@ -563,16 +563,6 @@
         <item name="android:textAlignment">viewStart</item>
     </style>
 
-    <style name="SettingsTextStyle">
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:paddingStart">@dimen/settings_margin</item>
-        <item name="android:paddingEnd">@dimen/settings_margin</item>
-        <item name="android:textSize">@dimen/bigger_text_size</item>
-        <item name="android:layout_centerVertical">true</item>
-        <item name="android:textAlignment">viewStart</item>
-    </style>
-
     <style name="SettingsTextSummaryStyle">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>

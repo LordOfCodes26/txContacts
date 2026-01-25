@@ -623,14 +623,14 @@ val letterBackgroundColorsArc = arrayListOf( // Arc
 )
 
 val letterBackgroundColorsIOS = arrayListOf( // iOS
-    0xFF8c88da,
+    0xFFd0b2e0,
     0xFF14e0fe,
-    0xFF8d8c70,
+    0xFFfffecb,
     0xFFfffe37,
     0xFF65f7eb,
     0xFFffbf5a,
-    0xFF972f2e,
-    0xFFc038a2,
+    0xFFfcabab,
+    0xFFfdb0eb,
     0xFFd6a688,
 )
 val letterBackgroundColorsIOSDark = arrayListOf( // iOS

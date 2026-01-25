@@ -274,7 +274,7 @@ fun Context.getAvatarColorIndexForName(name: String) : Int {
 /**
  * Creates a gradient drawable for activity background based on avatar color.
  * The gradient is similar to iOS 26 contacts background style with a glow effect.
- *
+ * 
  * @param avatarColor The base avatar color to create gradient from
  * @param blendWithSurface If true, blends the gradient with surface color for light themes (default: true)
  * @param glowIntensity The intensity of the glow effect (0.0 to 1.0, default: 0.4)
