@@ -2,6 +2,7 @@ package com.android.contacts.dialogs
 
 import androidx.appcompat.app.AlertDialog
 import com.goodwy.commons.activities.BaseSimpleActivity
+import com.goodwy.commons.dialogs.CustomDialogBuilder
 import com.goodwy.commons.extensions.*
 import com.goodwy.commons.helpers.getDateFormats
 import com.goodwy.commons.helpers.isSPlus
@@ -59,7 +60,7 @@ class MyDatePickerDialog(val activity: BaseSimpleActivity, val defaultDate: Stri
             }
         }
 
-        AlertDialog.Builder(activity, activity.getDatePickerDialogTheme())
+        CustomDialogBuilder(activity, activity.getDatePickerDialogTheme())
             .apply {
                 activity.setupDialogStuff(binding.root, this, titleText = "") { alertDialog ->
                     dialog = alertDialog
