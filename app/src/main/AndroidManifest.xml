@@ -218,6 +218,14 @@
             android:parentActivityName=".activities.MainActivity" />
 
         <activity
+            android:name=".activities.ContactPosterEditorActivity"
+            android:configChanges="orientation|screenSize"
+            android:exported="false"
+            android:label="@string/edit_contact"
+            android:parentActivityName=".activities.ViewContactActivity"
+            android:theme="@style/TranslucentTheme" />
+
+        <activity
             android:name=".activities.InsertOrEditContactActivity"
             android:configChanges="orientation"
             android:exported="true"

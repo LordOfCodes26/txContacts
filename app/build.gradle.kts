@@ -6,6 +6,7 @@ import java.io.FileInputStream
 plugins {
     alias(libs.plugins.android)
     alias(libs.plugins.kotlinAndroid)
+    alias(libs.plugins.compose.compiler)
     alias(libs.plugins.ksp)
     alias(libs.plugins.detekt)
 }
@@ -74,6 +75,7 @@ android {
     buildFeatures {
         viewBinding = true
         buildConfig = true
+        compose = true
     }
 
     buildTypes {
@@ -114,6 +116,15 @@ android {
     tasks.withType<KotlinCompile> {
         compilerOptions.jvmTarget.set(
             JvmTarget.fromTarget(project.libs.versions.app.build.kotlinJVMTarget.get())
+        )
+        compilerOptions.freeCompilerArgs.set(
+            listOf(
+                "-opt-in=kotlin.RequiresOptIn",
+                "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+                "-opt-in=androidx.compose.material.ExperimentalMaterialApi",
+                "-opt-in=androidx.compose.foundation.ExperimentalFoundationApi",
+                "-opt-in=com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi"
+            )
         )
     }
 
@@ -174,4 +185,15 @@ dependencies {
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
+
+    // Compose
+    implementation(libs.bundles.compose)
+    implementation(libs.compose.view.binding)
+    debugImplementation(libs.bundles.compose.preview)
+    
+    // Glide Compose
+    implementation(libs.glide.compose)
+    
+    // Photo Picker
+    implementation("androidx.activity:activity-compose:${libs.versions.composeActivity.get()}")
 }
