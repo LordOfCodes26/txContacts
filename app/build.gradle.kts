@@ -196,4 +196,9 @@ dependencies {
     
     // Photo Picker
     implementation("androidx.activity:activity-compose:${libs.versions.composeActivity.get()}")
+
+    implementation(files("libs/QmBlurView.aar"))
+    api(files("libs/common.aar"))
+    implementation(files("libs/AndroidLiquidGlassView.aar"))
+
 }

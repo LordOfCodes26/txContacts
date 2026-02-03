@@ -1,128 +1,93 @@
 <?xml version="1.0" encoding="utf-8"?>
-<eightbitlab.com.blurview.BlurTarget xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/mainBlurTarget"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@color/tx_main_background_color">
 
-    <androidx.coordinatorlayout.widget.CoordinatorLayout
-        android:id="@+id/main_coordinator"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-    <com.goodwy.commons.views.MySearchMenu
-        android:id="@+id/main_menu"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/main_holder"
+    <eightbitlab.com.blurview.BlurTarget
+        android:id="@+id/mainBlurTarget"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:fillViewport="true"
-        android:scrollbars="none"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+        android:background="@color/tx_main_background_color">
 
-        <RelativeLayout
-            android:id="@+id/main_top_tabs_container"
+        <androidx.coordinatorlayout.widget.CoordinatorLayout
+            android:id="@+id/main_coordinator"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintBottom_toTopOf="@+id/view_pager">
+            android:layout_height="match_parent">
 
-            <LinearLayout
-                android:id="@+id/main_top_tabs_background"
-                android:layout_width="wrap_content"
-                android:layout_height="32dp"
-                android:layout_alignTop="@+id/main_top_tabs_holder"
-                android:layout_alignBottom="@+id/main_top_tabs_holder"
-                android:layout_alignStart="@+id/main_top_tabs_holder"
-                android:layout_alignEnd="@+id/main_top_tabs_holder"
-                android:layout_marginTop="-3dp"
-                android:layout_marginBottom="-3dp"
-                android:layout_marginStart="-3dp"
-                android:layout_marginEnd="-3dp"
-                android:background="@drawable/tab_background"
-                android:elevation="12dp"
-                tools:ignore="Orientation" />
-            <!--android:layout_height="38dp"-->
+            <com.goodwy.commons.views.MySearchMenu
+                android:id="@+id/main_menu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
 
-            <com.google.android.material.tabs.TabLayout
-                android:id="@+id/main_top_tabs_holder"
-                android:layout_width="wrap_content"
-                android:layout_height="26dp"
-                android:layout_centerHorizontal="true"
-                android:layout_marginTop="6dp"
-                android:layout_marginBottom="12dp"
-                android:background="@null"
-                android:elevation="16dp"
-                app:tabIndicator="@drawable/tab_indicator"
-                app:tabIndicatorAnimationMode="elastic"
-                app:tabIndicatorColor="@android:color/white"
-                app:tabIndicatorFullWidth="true"
-                app:tabIndicatorGravity="stretch"
-                app:tabIndicatorHeight="48dp"
-                app:tabMaxWidth="114dp"
-                app:tabMinWidth="114dp"
-                app:tabMode="scrollable"
-                app:tabRippleColor="@android:color/transparent"
-                app:tabSelectedTextColor="@android:color/white" />
-            <!--android:layout_height="32dp"
-                android:alpha="0.85"-->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/main_holder"
+                app:layout_behavior="@string/appbar_scrolling_view_behavior"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:fillViewport="true"
+                android:scrollbars="none">
 
-        </RelativeLayout>
+                <com.goodwy.commons.views.MyViewPager
+                    android:id="@+id/viewPager"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp" />
 
-        <com.goodwy.commons.views.MyViewPager
-            android:id="@+id/viewPager"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+                <com.goodwy.commons.views.MyFloatingActionButton
+                    android:id="@+id/main_dialpad_button"
+                    style="?attr/floatingActionButtonSmallStyle"
+                    app:backgroundTint="@color/color_primary"
+                    app:layout_constraintBottom_toTopOf="@+id/main_add_button"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:maxImageSize="@dimen/larger_margin"
+                    app:rippleColor="@color/pressed_item_foreground"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|end"
+                    android:layout_marginEnd="@dimen/big_margin"
+                    android:layout_marginBottom="@dimen/activity_margin"
+                    android:contentDescription="@string/dialpad"
+                    android:elevation="@dimen/medium_margin"
+                    android:src="@drawable/ic_dialpad_vector" />
 
-        <com.goodwy.commons.views.MyFloatingActionButton
-            android:id="@+id/main_dialpad_button"
-            style="?attr/floatingActionButtonSmallStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|end"
-            android:layout_marginEnd="@dimen/big_margin"
-            android:layout_marginBottom="@dimen/activity_margin"
-            android:contentDescription="@string/dialpad"
-            android:elevation="@dimen/medium_margin"
-            android:src="@drawable/ic_dialpad_vector"
-            app:backgroundTint="@color/color_primary"
-            app:maxImageSize="@dimen/larger_margin"
-            app:layout_constraintBottom_toTopOf="@+id/main_add_button"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:rippleColor="@color/pressed_item_foreground" />
+                <com.goodwy.commons.views.MyFloatingActionButton
+                    android:id="@+id/main_add_button"
+                    style="?attr/floatingActionButtonStyle"
+                    app:backgroundTint="@color/color_primary"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:rippleColor="@color/pressed_item_foreground"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|end"
+                    android:layout_marginEnd="@dimen/bigger_margin"
+                    android:layout_marginBottom="120dp"
+                    android:contentDescription="@string/create_new"
+                    android:elevation="@dimen/medium_margin"
+                    android:padding="@dimen/activity_margin"
+                    android:src="@drawable/ic_plus_vector" />
 
-        <com.goodwy.commons.views.MyFloatingActionButton
-            android:id="@+id/main_add_button"
-            style="?attr/floatingActionButtonStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|end"
-            android:layout_marginEnd="@dimen/bigger_margin"
-            android:layout_marginBottom="@dimen/activity_margin"
-            android:contentDescription="@string/create_new"
-            android:elevation="@dimen/medium_margin"
-            android:padding="@dimen/activity_margin"
-            android:src="@drawable/ic_plus_vector"
-            app:backgroundTint="@color/color_primary"
-            app:layout_constraintBottom_toTopOf="@+id/main_tabs_holder"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:rippleColor="@color/pressed_item_foreground" />
+<!--                <com.goodwy.commons.views.MyLiquidNavigationView-->
+<!--                    android:id="@+id/main_tabs_holder"-->
+<!--                    app:layout_constraintBottom_toBottomOf="parent"-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="wrap_content" />-->
 
-        <com.goodwy.commons.views.MyLiquidNavigationView
-            android:id="@+id/main_tabs_holder"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:layout_constraintBottom_toBottomOf="parent" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+        </androidx.coordinatorlayout.widget.CoordinatorLayout>
+    </eightbitlab.com.blurview.BlurTarget>
 
-    </androidx.coordinatorlayout.widget.CoordinatorLayout>
-</eightbitlab.com.blurview.BlurTarget>
+
+    <com.android.common.view.MTabBar
+        android:id="@+id/tab_bar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingBottom="50dp"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentBottom="true"/>
+</RelativeLayout>
+

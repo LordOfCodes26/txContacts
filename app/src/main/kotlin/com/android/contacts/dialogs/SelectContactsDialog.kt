@@ -208,7 +208,7 @@ class SelectContactsDialog(
         onSearchClosedListener = {
             searchEditText.clearFocus()
             activity.hideKeyboard(searchEditText)
-            updateSearchViewLeftIcon(com.goodwy.commons.R.drawable.ic_search_vector)
+            updateSearchViewLeftIcon(com.android.common.R.drawable.ic_cmn_search)
         }
 
         onSearchTextChangedListener = { text ->

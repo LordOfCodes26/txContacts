@@ -27,6 +27,8 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager.widget.ViewPager
+import com.android.common.helper.IconItem
+import com.android.common.view.MTabBar
 import com.behaviorule.arturdumchev.library.pixels
 import com.goodwy.commons.databases.ContactsDatabase
 import com.goodwy.commons.dialogs.NewAppDialog
@@ -65,6 +67,7 @@ import com.android.contacts.interfaces.RefreshContactsListener
 import com.goodwy.commons.extensions.onTabSelectionChanged
 import com.goodwy.commons.extensions.setBackgroundColor
 import com.goodwy.commons.extensions.setText
+import com.qmdeve.liquidglass.view.LiquidGlassTabs
 import me.grantland.widget.AutofitHelper
 import java.util.*
 import kotlin.and
@@ -103,7 +106,7 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
         appLaunched(BuildConfig.APPLICATION_ID)
         setupOptionsMenu()
         refreshMenuItems()
-        setupEdgeToEdge(padBottomImeAndSystem = listOf(binding.mainTabsHolder))
+        setupEdgeToEdge()
 
         storeStateVariables()
         checkContactPermissions()
@@ -509,15 +512,17 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
 
         // bottom tab bar
         if (config.bottomNavigationBar) {
-            // MyLiquidNavigationView handles colors internally through Compose
+            // MTabBar handles colors internally
             // No need to manually update tab item colors
             
             val bottomBarColor =
                 if (isDynamicTheme() && !isSystemInDarkMode()) getColoredMaterialStatusBarColor()
                 else getSurfaceColor()
-            binding.mainTabsHolder.setBackgroundColor(bottomBarColor)
             window.setSystemBarsAppearance(bottomBarColor)
-            if (binding.mainTabsHolder.tabCount == 1) {
+            
+            // Get tab count from the tab items list
+            val tabCount = tabsList.count { config.showTabs and it != 0 }
+            if (tabCount == 1) {
                 // Handle transparent navigation bar with window insets
                 ViewCompat.setOnApplyWindowInsetsListener(binding.mainCoordinator) { view, insets ->
                     val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -533,87 +538,14 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
             val properPrimaryColor = getProperPrimaryColor()
             getAllFragments().forEach {
                 it?.setupColors(properTextColor, properPrimaryColor, getProperAccentColor())
-                binding.mainTopTabsHolder.setTabTextColors(properTextColor, properPrimaryColor)
             }
-        } else {
-            // top tab bar
-            val properTextColor = getProperTextColor()
-            val properPrimaryColor = getProperPrimaryColor()
-
-            if (binding.viewPager.adapter != null) {
-
-                if (config.needRestart) {
-                    if (config.useIconTabs) {
-                        binding.mainTopTabsHolder.getTabAt(0)?.text = null
-                        binding.mainTopTabsHolder.getTabAt(1)?.text = null
-                        binding.mainTopTabsHolder.getTabAt(2)?.text = null
-                    } else {
-                        binding.mainTopTabsHolder.getTabAt(0)?.icon = null
-                        binding.mainTopTabsHolder.getTabAt(1)?.icon = null
-                        binding.mainTopTabsHolder.getTabAt(2)?.icon = null
-                    }
-                }
-
-                getInactiveTabIndexes(binding.viewPager.currentItem).forEach {
-                    binding.mainTopTabsHolder.getTabAt(it)?.icon?.applyColorFilter(properTextColor)
-                    binding.mainTopTabsHolder.getTabAt(it)?.icon?.alpha = 220 // max 255
-                    binding.mainTopTabsHolder.setTabTextColors(properTextColor, properPrimaryColor)
-                }
-
-                binding.mainTopTabsHolder.getTabAt(binding.viewPager.currentItem)?.icon?.applyColorFilter(properPrimaryColor)
-                binding.mainTopTabsHolder.getTabAt(binding.viewPager.currentItem)?.icon?.alpha = 220 // max 255
-                getAllFragments().forEach {
-                    it?.setupColors(properTextColor, properPrimaryColor, getProperAccentColor())
-                    binding.mainTopTabsHolder.setTabTextColors(properTextColor, properPrimaryColor)
-                }
-            }
-
-            val lastUsedPage = getDefaultTab()
-            binding.mainTopTabsHolder.apply {
-                setSelectedTabIndicatorColor(getProperBackgroundColor())
-                getTabAt(lastUsedPage)?.select()
-                getTabAt(lastUsedPage)?.icon?.applyColorFilter(properPrimaryColor)
-                getTabAt(lastUsedPage)?.icon?.alpha = 220 // max 255
-
-                getInactiveTabIndexes(lastUsedPage).forEach {
-                    getTabAt(it)?.icon?.applyColorFilter(properTextColor)
-                    getTabAt(it)?.icon?.alpha = 220 // max 255
-                }
-            }
-
-            binding.mainTopTabsHolder.onTabSelectionChanged(
-                tabUnselectedAction = {
-                    it.icon?.applyColorFilter(properTextColor)
-                    it.icon?.alpha = 220 // max 255
-                },
-                tabSelectedAction = {
-                    if (config.closeSearch) {
-                        closeSearch()
-                    } else {
-                        //On tab switch, the search string is not deleted
-                        //It should not start on the first startup
-                        val customToolbar = binding.mainMenu.requireCustomToolbar()
-                        if (customToolbar.isSearchExpanded) {
-                            getCurrentFragment()?.onSearchQueryChanged(searchQuery)
-                        }
-                    }
-
-                    binding.viewPager.currentItem = it.position
-                    it.icon?.applyColorFilter(properPrimaryColor)
-                    it.icon?.alpha = 220 // max 255
-
-                    if (config.openSearch) {
-                        if (getCurrentFragment() is ContactsFragment) {
-                            binding.mainMenu.requireCustomToolbar().expandSearch()
-                            binding.mainMenu.isSearchOpen = true
-                        }
-                    }
-                }
-            )
         }
     }
 
-    private fun getInactiveTabIndexes(activeIndex: Int) = (0 until binding.mainTabsHolder.tabCount).filter { it != activeIndex }
+    private fun getInactiveTabIndexes(activeIndex: Int): List<Int> {
+        val tabCount = tabsList.count { config.showTabs and it != 0 }
+        return (0 until tabCount).filter { it != activeIndex }
+    }
 
     private fun initFragments() {
         binding.viewPager.offscreenPageLimit = 2 //tabsList.size - 1
@@ -626,8 +558,8 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
 
             override fun onPageSelected(position: Int) {
                 if (config.bottomNavigationBar) {
-                    binding.mainTabsHolder.getTabAt(position)?.select()
-                } else binding.mainTopTabsHolder.getTabAt(position)?.select()
+                    binding.tabBar.setSelection(position)
+                }
 
                 getAllFragments().forEach {
                     it?.finishActMode()
@@ -658,30 +590,13 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
             }
         }
 
-        binding.mainTopTabsHolder.removeAllTabs()
         var skippedTabs = 0
         tabsList.forEachIndexed { index, value ->
             if (config.showTabs and value == 0) {
                 skippedTabs++
-            } else {
-                val tab = if (config.useIconTabs) binding.mainTopTabsHolder.newTab().setIcon(getTabIcon(index)) else binding.mainTopTabsHolder.newTab().setText(getTabLabel(index))
-                tab.contentDescription = getTabLabel(index)
-                binding.mainTopTabsHolder.addTab(tab, index - skippedTabs, getDefaultTab() == index - skippedTabs)
-                binding.mainTopTabsHolder.setTabTextColors(getProperTextColor(),
-                    getProperPrimaryColor())
             }
         }
 
-        // selecting the proper tab sometimes glitches, add an extra selector to make sure we have it right
-        binding.mainTopTabsHolder.onGlobalLayout {
-            mainHandler.postDelayed({
-                binding.mainTopTabsHolder.getTabAt(getDefaultTab())?.select()
-                invalidateOptionsMenu()
-                refreshMenuItems()
-            }, 100L)
-        }
-
-        binding.mainTopTabsContainer.beGoneIf(binding.mainTopTabsHolder.tabCount == 1 || config.bottomNavigationBar)
     }
 
     private fun handleExternalIntent() {
@@ -772,21 +687,28 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
 
     private fun setupTabs() {
         binding.viewPager.adapter = null
-        binding.mainTabsHolder.removeAllTabs()
         
+        // Create IconItem list for MTabBar
+        val tabItems = ArrayList<IconItem>()
         tabsList.forEachIndexed { index, value ->
             if (config.showTabs and value != 0) {
-                binding.mainTabsHolder.newTab().apply {
-                    setIcon(getTabIconRes(index))
-                    setText(getTabLabelFromConfig(index))
-                }.also { binding.mainTabsHolder.addTab(it) }
+                val iconItem = IconItem()
+                iconItem.icon = getTabIconRes(index)
+                iconItem.title = getTabLabelFromConfig(index)
+                tabItems.add(iconItem)
             }
         }
-
-        binding.mainTabsHolder.onTabSelectionChanged(
-            tabUnselectedAction = {
-            },
-            tabSelectedAction = {
+        
+        // Get BlurTarget for MTabBar
+        val blurTarget = findViewById<BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
+            ?: throw IllegalStateException("mainBlurTarget not found")
+        
+        // Setup MTabBar
+        binding.tabBar.setTabs(this, tabItems, blurTarget)
+        
+        // Setup tab selection listener
+        binding.tabBar.setOnTabSelectedListener(object : LiquidGlassTabs.OnTabSelectedListener {
+            override fun onTabSelected(index: Int) {
                 if (config.closeSearch) {
                     binding.mainMenu.closeSearch()
                 } else {
@@ -795,7 +717,7 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
                     if (binding.mainMenu.isSearchOpen) getCurrentFragment()?.onSearchQueryChanged(binding.mainMenu.getCurrentQuery())
                 }
 
-                binding.viewPager.currentItem = it.position
+                binding.viewPager.setCurrentItem(index, true)
 
                 if (config.openSearch) {
                     if (getCurrentFragment() is ContactsFragment) {
@@ -803,9 +725,20 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
                     }
                 }
             }
-        )
 
-        binding.mainTabsHolder.beGoneIf(binding.mainTabsHolder.tabCount == 1)
+            override fun onTabUnselected(position: Int) {
+                // No action needed
+            }
+
+            override fun onTabReselected(position: Int) {
+                // No action needed
+            }
+        })
+
+        // Hide tab bar if only one tab
+        val tabCount = tabItems.size
+        binding.tabBar.beGoneIf(tabCount == 1)
+        
         storedShowTabs = config.showTabs
         storedStartNameWithSurname = config.startNameWithSurname
         storedShowPhoneNumbers = config.showPhoneNumbers
@@ -883,7 +816,7 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
             mainHandler.post {
                 val index = getDefaultTab()
                 binding.viewPager.setCurrentItem(index, false)
-                // onPageSelected callback will automatically select the tab in mainTabsHolder
+                // onPageSelected callback will automatically select the tab in tabBar
             }
         }
 

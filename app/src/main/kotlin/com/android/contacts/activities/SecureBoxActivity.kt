@@ -251,7 +251,7 @@ class SecureBoxActivity : SimpleActivity() {
                     setPadding(smallPadding, paddingTop, paddingRight, paddingBottom)
                 }
                 findViewById<android.widget.ImageView>(androidx.appcompat.R.id.search_close_btn)?.apply {
-                    setImageResource(com.goodwy.commons.R.drawable.ic_clear_round)
+                    setImageResource(com.android.common.R.drawable.ic_cmn_search_close)
                     setColorFilter(textColor)
                 }
                 findViewById<android.view.View>(androidx.appcompat.R.id.search_plate)?.apply {
