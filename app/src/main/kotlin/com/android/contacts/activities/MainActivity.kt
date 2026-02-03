@@ -103,7 +103,7 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
         appLaunched(BuildConfig.APPLICATION_ID)
         setupOptionsMenu()
         refreshMenuItems()
-        setupEdgeToEdge(padBottomImeAndSystem = listOf())
+        setupEdgeToEdge(padBottomImeAndSystem = listOf(binding.mainTabsHolder))
 
         storeStateVariables()
         checkContactPermissions()
