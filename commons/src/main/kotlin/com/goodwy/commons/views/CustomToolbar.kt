@@ -47,6 +47,7 @@ import com.goodwy.commons.extensions.getProperTextCursorColor
 import com.goodwy.commons.extensions.isSystemInDarkMode
 import com.goodwy.commons.extensions.onTextChangeListener
 import android.graphics.drawable.GradientDrawable
+import com.android.common.view.MImageButton
 import eightbitlab.com.blurview.BlurTarget
 import eightbitlab.com.blurview.BlurView
 
@@ -78,6 +79,7 @@ class CustomToolbar @JvmOverloads constructor(
     private var cachedIconSize: Int? = null
     private var cachedMediumIconSize: Int? = null
     private var cachedSmallerMargin: Int? = null
+    private var cachedIconPadding: Int? = null
     private var cachedNormalMargin: Int? = null
     private var cachedBackgroundDrawable: Drawable? = null
     
@@ -324,7 +326,14 @@ class CustomToolbar @JvmOverloads constructor(
         }
         return cachedSmallerMargin!!
     }
-    
+
+    private fun getIconPadding(): Int {
+        if (cachedIconPadding == null) {
+            cachedIconPadding = resources.getDimensionPixelSize(R.dimen.icon_padding)
+        }
+        return cachedIconPadding!!
+    }
+
     private fun getNormalMargin(): Int {
         if (cachedNormalMargin == null) {
             cachedNormalMargin = resources.getDimensionPixelSize(R.dimen.normal_margin)
@@ -707,26 +716,26 @@ class CustomToolbar @JvmOverloads constructor(
     /**
      * Create an action button for a menu item with proper click handling
      */
-    private fun createActionButton(item: MenuItem): ImageView {
+    private fun createActionButton(item: MenuItem): MImageButton {
         val iconSize = getMediumIconSize()
         val margin = getNormalMargin()
         val textColor = getTextColor()
-        val padding = getSmallerMargin()
-        
-        return ImageView(context).apply {
+        val padding = getIconPadding()
+
+        return MImageButton(context).apply {
             // Set layout params (same size as menu button)
             layoutParams = LinearLayout.LayoutParams(iconSize, iconSize).apply {
                 marginEnd = margin
             }
-            
+
             // Set padding for the action button
             setPadding(padding, padding, padding, padding)
-            
+
             // Set clickable, focusable, and enabled properties FIRST
             isClickable = true
             isFocusable = true
             isEnabled = true
-            
+
             // Get a fresh instance of the background drawable for ripple effect
             // Each view needs its own instance for ripple to work properly
             background = getActionButtonBackgroundDrawable()
