@@ -20,7 +20,6 @@ class GroupsFragment(context: Context, attributeSet: AttributeSet) : MyViewPager
     }
 
     override fun fabClicked() {
-        finishActMode()
         showNewGroupsDialog()
     }
 

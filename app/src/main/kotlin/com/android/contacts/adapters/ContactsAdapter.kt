@@ -21,6 +21,7 @@ import android.widget.RelativeLayout
 import com.goodwy.commons.views.BlurPopupMenu
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import com.behaviorule.arturdumchev.library.pixels
@@ -237,10 +238,34 @@ class ContactsAdapter(
         }
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     override fun onActionModeCreated() {
+        // Update action mode toolbar background color to match main toolbar
+        val useSurfaceColor = activity.isDynamicTheme() && !activity.isSystemInDarkMode()
+        val cabBackgroundColor = if (useSurfaceColor) {
+            activity.getSurfaceColor()
+        } else {
+            activity.getProperBackgroundColor()
+        }
+        
+        val actModeBar = actMode?.customView?.parent as? View
+        actModeBar?.setBackgroundColor(cabBackgroundColor)
+        
+        // Access toolbar through customView since actBarToolbar is private
+        val toolbar = actMode?.customView as? com.goodwy.commons.views.CustomActionModeToolbar
+        toolbar?.updateTextColorForBackground(cabBackgroundColor)
+        toolbar?.updateColorsForBackground(cabBackgroundColor)
+        
+        // Update status bar color to match action mode toolbar background
+        if (activity is com.goodwy.commons.activities.EdgeToEdgeActivity) {
+            activity.window.statusBarColor = cabBackgroundColor
+            activity.window.setSystemBarsAppearance(cabBackgroundColor)
+        }
+        
         notifyDataSetChanged()
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     override fun onActionModeDestroyed() {
         notifyDataSetChanged()
     }
@@ -320,14 +345,33 @@ class ContactsAdapter(
     private fun getItemWithKey(key: Int): Contact? = contactItems.firstOrNull { it.id == key }
 
     fun updateItems(newItems: List<Contact>, highlightText: String = "") {
-        if (newItems.hashCode() != contactItems.hashCode()) {
-            contactItems = newItems.toMutableList()
+        val oldItems = contactItems.toList()
+        val highlightChanged = textToHighlight != highlightText
+
+        if (newItems.hashCode() != contactItems.hashCode() || highlightChanged) {
             textToHighlight = highlightText
-            notifyDataSetChanged()
-            finishActMode()
-        } else if (textToHighlight != highlightText) {
-            textToHighlight = highlightText
-            notifyDataSetChanged()
+
+            if (newItems.hashCode() != contactItems.hashCode()) {
+                val diffCallback = ContactDiffCallback(oldItems, newItems)
+                val diffResult = DiffUtil.calculateDiff(diffCallback, false)
+                contactItems = newItems.toMutableList()
+                diffResult.dispatchUpdatesTo(this)
+                finishActMode()
+            } else {
+                // Only highlight changed, notify visible items
+                val layoutManager = recyclerView.layoutManager
+                if (layoutManager is androidx.recyclerview.widget.LinearLayoutManager) {
+                    val firstVisible = layoutManager.findFirstVisibleItemPosition()
+                    val lastVisible = layoutManager.findLastVisibleItemPosition()
+                    if (firstVisible != RecyclerView.NO_POSITION && lastVisible != RecyclerView.NO_POSITION) {
+                        for (i in firstVisible..lastVisible) {
+                            notifyItemChanged(i, "highlight")
+                        }
+                    }
+                } else {
+                    notifyDataSetChanged()
+                }
+            }
         }
     }
 
@@ -766,30 +810,12 @@ class ContactsAdapter(
             findViewById<ImageView>(com.goodwy.commons.R.id.item_contact_image).beVisibleIf(showContactThumbnails)
 
             if (showContactThumbnails) {
-                val placeholderImage = SimpleContactsHelper(context).getContactLetterIcon(fullName).toDrawable(resources)
-                if (contact.photoUri.isEmpty() && contact.photo == null) {
-                    if (contact.isABusinessContact()) {
-                        val drawable = SimpleContactsHelper(context).getColoredCompanyIcon(fullName)
-                        findViewById<ImageView>(com.goodwy.commons.R.id.item_contact_image).setImageDrawable(drawable)
-                    } else {
-                        findViewById<ImageView>(com.goodwy.commons.R.id.item_contact_image).setImageDrawable(placeholderImage)
-                    }
+                val imageView = findViewById<ImageView>(com.goodwy.commons.R.id.item_contact_image)
+                if (contact.isABusinessContact() && contact.photoUri.isEmpty() && contact.photo == null) {
+                    val drawable = SimpleContactsHelper(context).getColoredCompanyIcon(fullName)
+                    imageView.setImageDrawable(drawable)
                 } else {
-                    val options = RequestOptions()
-                        .signature(ObjectKey(contact.getSignatureKey()))
-                        .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
-                        .error(placeholderImage)
-                        .centerCrop()
-
-                    val itemToLoad: Any? = contact.photoUri.ifEmpty {
-                        contact.photo
-                    }
-
-                    Glide.with(activity)
-                        .load(itemToLoad)
-                        .apply(options)
-                        .apply(RequestOptions.circleCropTransform())
-                        .into(findViewById(com.goodwy.commons.R.id.item_contact_image))
+                    SimpleContactsHelper(context).loadContactImage(contact.photoUri, imageView, fullName)
                 }
 
                 if (viewType != VIEW_TYPE_GRID) {
@@ -1005,16 +1031,23 @@ class ContactsAdapter(
     }
 
     private fun showPopupMenu(view: View, contact: Contact, touchX: Float = -1f, touchY: Float = -1f) {
+        // Safety checks to prevent crashes
+        if (activity.isDestroyed || activity.isFinishing) {
+            return
+        }
+        
         finishActMode()
         
         // Determine gravity based on touch position: left side = START, right side = END
-        val gravity = if (touchX >= 0 && touchX < view.width / 2) {
+        // Use view.width only if it's been measured (width > 0)
+        val gravity = if (touchX >= 0 && view.width > 0 && touchX < view.width / 2) {
             Gravity.START
         } else {
             Gravity.END
         }
 
-        BlurPopupMenu(activity, view, gravity, touchX, touchY).apply {
+        try {
+            BlurPopupMenu(activity, view, gravity, touchX, touchY).apply {
             inflate(R.menu.cab)
             
             // Prepare menu items visibility based on contact and location
@@ -1082,7 +1115,23 @@ class ContactsAdapter(
                 }
                 true
             }
-            show()
+            
+            // Ensure menu shows
+            try {
+                show()
+            } catch (e: Exception) {
+                // If show fails, log and try again
+                android.util.Log.e("ContactsAdapter", "Error showing popup menu", e)
+                try {
+                    show()
+                } catch (e2: Exception) {
+                    android.util.Log.e("ContactsAdapter", "Error showing popup menu (retry)", e2)
+                }
+            }
+        }
+        } catch (e: Exception) {
+            // Log and silently handle any exceptions during popup menu creation/showing
+            android.util.Log.e("ContactsAdapter", "Error showing popup menu", e)
         }
     }
 
@@ -1090,5 +1139,28 @@ class ContactsAdapter(
         selectedKeys.add(contactId)
         callback()
         selectedKeys.remove(contactId)
+    }
+}
+
+class ContactDiffCallback(
+    private val oldList: List<Contact>,
+    private val newList: List<Contact>
+) : DiffUtil.Callback() {
+
+    override fun getOldListSize(): Int = oldList.size
+
+    override fun getNewListSize(): Int = newList.size
+
+    override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+        return oldList[oldItemPosition].id == newList[newItemPosition].id
+    }
+
+    override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+        val oldItem = oldList[oldItemPosition]
+        val newItem = newList[newItemPosition]
+        return oldItem.getNameToDisplay() == newItem.getNameToDisplay() &&
+            oldItem.photoUri == newItem.photoUri &&
+            oldItem.starred == newItem.starred &&
+            oldItem.phoneNumbers.firstOrNull()?.value == newItem.phoneNumbers.firstOrNull()?.value
     }
 }

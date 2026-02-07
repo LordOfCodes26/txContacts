@@ -343,7 +343,7 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
             findItem(R.id.search).isVisible = /*!config.bottomNavigationBar*/ true
             findItem(R.id.sort).isVisible = currentFragment != groupsFragment
             findItem(R.id.filter).isVisible = currentFragment != groupsFragment
-            findItem(R.id.select).isVisible = currentFragment != null
+            findItem(R.id.select).isVisible = currentFragment != groupsFragment
             //findItem(R.id.dialpad).isVisible = !config.showDialpadButton
             findItem(R.id.change_view_type).isVisible = currentFragment == favoritesFragment
             findItem(R.id.column_count).isVisible = currentFragment == favoritesFragment && config.viewType == VIEW_TYPE_GRID

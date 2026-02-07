@@ -2,13 +2,12 @@ package com.android.contacts.adapters
 
 import android.annotation.SuppressLint
 import android.util.TypedValue
-import android.view.ContextThemeWrapper
 import android.view.Gravity
 import android.view.Menu
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.widget.PopupMenu
+import com.goodwy.commons.views.BlurPopupMenu
 import com.behaviorule.arturdumchev.library.pixels
 import com.qtalk.recyclerviewfastscroller.RecyclerViewFastScroller
 import com.goodwy.commons.adapters.MyRecyclerViewAdapter
@@ -40,65 +39,32 @@ class GroupsAdapter(
         setupDragListener(true)
     }
 
-    override fun getActionMenuId() = R.menu.cab_groups
+    // Disable action mode by returning 0
+    override fun getActionMenuId() = 0
 
     override fun prepareActionMode(menu: Menu) {
-        val allSelected = selectedKeys.size == getSelectableItemCount() && getSelectableItemCount() > 0
-        val noneSelected = selectedKeys.isEmpty()
-        
-        menu.apply {
-            findItem(R.id.cab_rename).isVisible = isOneItemSelected()
-            // Show/hide select_all and deselect_all based on selection state
-            findItem(R.id.cab_select_all).isVisible = !allSelected && getSelectableItemCount() > 0
-            findItem(R.id.cab_deselect_all).isVisible = !noneSelected
-        }
+        // No-op: action mode is disabled
     }
 
     override fun actionItemPressed(id: Int) {
-        // Allow select_all and deselect_all to work even when no items are selected
-        when (id) {
-            R.id.cab_select_all -> {
-                selectAll()
-                return
-            }
-            R.id.cab_deselect_all -> {
-                deselectAll()
-                return
-            }
-        }
-
-        if (selectedKeys.isEmpty()) {
-            return
-        }
-
-        when (id) {
-            R.id.cab_rename -> renameGroup()
-            R.id.cab_delete -> askConfirmDelete()
-        }
+        // No-op: action mode is disabled
     }
 
-    override fun getSelectableItemCount() = groups.size
+    override fun getSelectableItemCount() = 0
 
-    override fun getIsItemSelectable(position: Int) = true
+    override fun getIsItemSelectable(position: Int) = false
 
-    override fun getItemSelectionKey(position: Int) = groups.getOrNull(position)?.id?.toInt()
+    override fun getItemSelectionKey(position: Int) = null
 
-    override fun getItemKeyPosition(key: Int) = groups.indexOfFirst { it.id!!.toInt() == key }
+    override fun getItemKeyPosition(key: Int) = -1
 
-    private fun deselectAll() {
-        val positions = getSelectedItemPositions()
-        positions.forEach { position ->
-            toggleItemSelection(false, position, false)
-        }
-        updateTitle()
-        if (selectedKeys.isEmpty()) {
-            finishActMode()
-        }
+    override fun onActionModeCreated() {
+        // No-op: action mode is disabled
     }
 
-    override fun onActionModeCreated() {}
-
-    override fun onActionModeDestroyed() {}
+    override fun onActionModeDestroyed() {
+        // No-op: action mode is disabled
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         return createViewHolder(ItemGroupBinding.inflate(layoutInflater, parent, false).root)
@@ -114,12 +80,14 @@ class GroupsAdapter(
             setupView(itemView, group)
             
             // Track touch position for popup menu positioning
+            var lastTouchY: Float = -1f
             itemView.setOnTouchListener { view, event ->
                 if (event.action == MotionEvent.ACTION_DOWN ||
                     event.action == MotionEvent.ACTION_MOVE) {
                     lastTouchX = event.x
-                    // Store in view tag
-                    view.tag = lastTouchX
+                    lastTouchY = event.y
+                    // Store in view tag as Pair<Float, Float>
+                    view.tag = Pair(lastTouchX, lastTouchY)
                 }
                 false  // Don't consume the event
             }
@@ -127,8 +95,10 @@ class GroupsAdapter(
         
         // Set long click listener AFTER bindView to override the default behavior
         holder.itemView.setOnLongClickListener { view ->
-            val touchX = (view.tag as? Float) ?: lastTouchX
-            showPopupMenu(holder.itemView, group, touchX)
+            val touchPos = (view.tag as? Pair<*, *>)
+            val touchX = (touchPos?.first as? Float) ?: lastTouchX
+            val touchY = (touchPos?.second as? Float) ?: -1f
+            showPopupMenu(holder.itemView, group, touchX, touchY)
             true
         }
         
@@ -137,48 +107,22 @@ class GroupsAdapter(
 
     override fun getItemCount() = groups.size
 
-    private fun getItemWithKey(key: Int): Group? = groups.firstOrNull { it.id!!.toInt() == key }
-
     fun updateItems(newItems: ArrayList<Group>, highlightText: String = "") {
         if (newItems.hashCode() != groups.hashCode()) {
             groups = newItems
             textToHighlight = highlightText
             notifyDataSetChanged()
-            finishActMode()
         } else if (textToHighlight != highlightText) {
             textToHighlight = highlightText
             notifyDataSetChanged()
         }
     }
 
-    private fun renameGroup() {
-        val group = getItemWithKey(selectedKeys.first()) ?: return
+    private fun renameGroup(group: Group) {
         val blurTarget = activity.findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
             ?: throw IllegalStateException("mainBlurTarget not found")
         RenameGroupDialog(activity, group, blurTarget) {
-            finishActMode()
             refreshListener?.refreshContacts(TAB_GROUPS)
-        }
-    }
-
-    private fun askConfirmDelete() {
-        val itemsCnt = selectedKeys.size
-        val firstItem = getSelectedItems().first()
-        val items = if (itemsCnt == 1) {
-            "\"${firstItem.title}\""
-        } else {
-            resources.getQuantityString(R.plurals.delete_groups, itemsCnt, itemsCnt)
-        }
-
-        val baseString = com.goodwy.commons.R.string.deletion_confirmation
-        val question = String.format(resources.getString(baseString), items)
-
-        val blurTarget = activity.findViewById<eightbitlab.com.blurview.BlurTarget>(com.goodwy.commons.R.id.mainBlurTarget)
-            ?: throw IllegalStateException("mainBlurTarget not found")
-        ConfirmationDialog(activity, question, blurTarget = blurTarget) {
-            ensureBackgroundThread {
-                deleteGroups()
-            }
         }
     }
 
@@ -194,15 +138,6 @@ class GroupsAdapter(
                 deleteGroups(listOf(group))
             }
         }
-    }
-
-    private fun deleteGroups() {
-        if (selectedKeys.isEmpty()) {
-            return
-        }
-
-        val groupsToRemove = groups.filter { selectedKeys.contains(it.id!!.toInt()) }
-        deleteGroups(groupsToRemove)
     }
 
     private fun deleteGroups(groupsToRemove: List<Group>) {
@@ -221,17 +156,14 @@ class GroupsAdapter(
 
         activity.runOnUiThread {
             refreshListener?.refreshContacts(TAB_GROUPS)
-            finishActMode()
         }
     }
-
-    private fun getSelectedItems() = groups.filter { selectedKeys.contains(it.id?.toInt()) } as ArrayList<Group>
 
     private fun getLastItem() = groups.last()
 
     private fun setupView(view: View, group: Group) {
         ItemGroupBinding.bind(view).apply {
-            groupFrame.isSelected = selectedKeys.contains(group.id!!.toInt())
+            groupFrame.isSelected = false
             val titleWithCnt = "${group.title} (${group.contactsCount})"
             val groupTitle = if (textToHighlight.isEmpty()) {
                 titleWithCnt
@@ -259,98 +191,60 @@ class GroupsAdapter(
 
     override fun onChange(position: Int) = groups.getOrNull(position)?.getBubbleText() ?: ""
 
-    private fun showPopupMenu(view: View, group: Group, touchX: Float = -1f) {
-        finishActMode()
-        val theme = activity.getPopupMenuTheme()
-        val contextTheme = ContextThemeWrapper(activity, theme)
+    private fun showPopupMenu(view: View, group: Group, touchX: Float = -1f, touchY: Float = -1f) {
+        // Safety checks to prevent crashes
+        if (activity.isDestroyed || activity.isFinishing) {
+            return
+        }
         
         // Determine gravity based on touch position: left side = START, right side = END
-        val gravity = if (touchX >= 0 && touchX < view.width / 2) {
+        // Use view.width only if it's been measured (width > 0)
+        val gravity = if (touchX >= 0 && view.width > 0 && touchX < view.width / 2) {
             Gravity.START
         } else {
             Gravity.END
         }
 
-        PopupMenu(contextTheme, view, gravity).apply {
-            inflate(R.menu.cab_groups)
-            
-            // Prepare menu items visibility
-            menu.apply {
-                findItem(R.id.cab_rename).isVisible = true
-                findItem(R.id.cab_select_all).isVisible = false  // Hide select all in popup menu
-            }
-            
-            setOnMenuItemClickListener { item ->
-                when (item.itemId) {
-                    R.id.cab_rename -> {
-                        executeItemMenuOperation(group.id!!.toInt()) {
-                            renameGroup()
+        try {
+            BlurPopupMenu(activity, view, gravity, touchX, touchY).apply {
+                inflate(R.menu.cab_groups)
+                
+                // Prepare menu items visibility
+                menu.apply {
+                    findItem(R.id.cab_rename).isVisible = true
+                    findItem(R.id.cab_select_all).isVisible = false  // Hide select all in popup menu
+                    findItem(R.id.cab_deselect_all).isVisible = false  // Hide deselect all in popup menu
+                }
+                
+                setOnMenuItemClickListener { item ->
+                    when (item.itemId) {
+                        R.id.cab_rename -> {
+                            renameGroup(group)
+                        }
+                        R.id.cab_delete -> {
+                            askConfirmDelete(group)
                         }
                     }
-                    R.id.cab_delete -> {
-                        askConfirmDelete(group)
-                    }
+                    true
                 }
-                true
-            }
-            show()
-
-            // Adjust X position based on touch location using reflection
-            if (touchX >= 0) {
+                
+                // Ensure menu shows
                 try {
-                    // Access PopupMenu's internal PopupWindow to adjust X position
-                    val popupField = PopupMenu::class.java.getDeclaredField("mPopup")
-                    popupField.isAccessible = true
-                    val menuPopup = popupField.get(this)
-
-                    val popupWindowField = menuPopup.javaClass.getDeclaredField("mPopup")
-                    popupWindowField.isAccessible = true
-                    val popupWindow = popupWindowField.get(menuPopup) as android.widget.PopupWindow
-
-                    // Calculate X offset: center menu on touch point
-                    view.post {
-                        val location = IntArray(2)
-                        view.getLocationOnScreen(location)
-                        val viewX = location[0]
-                        val screenWidth = activity.resources.displayMetrics.widthPixels
-
-                        // Get menu width (approximate or measure)
-                        val menuWidth = (screenWidth * 0.6).toInt()
-                        val offset = activity.resources.getDimensionPixelSize(com.goodwy.commons.R.dimen.smaller_margin)
-
-                        // Calculate desired X position based on touch location
-                        val touchXInt = touchX.toInt()
-                        val isLeftSide = touchXInt < view.width / 2
-                        var menuX: Int = if (isLeftSide) {
-                            // Menu starts at touchX with offset
-                            viewX + touchXInt + offset
-                        } else {
-                            // Menu ends at touchX with offset
-                            viewX + touchXInt - menuWidth - offset
-                        }
-
-                        // Keep within screen bounds
-                        if (menuX < 0) menuX = 0
-                        if (menuX + menuWidth > screenWidth) menuX = screenWidth - menuWidth
-
-                        // Get current Y position
-                        val yLocation = IntArray(2)
-                        view.getLocationOnScreen(yLocation)
-                        val yOffset = yLocation[1] + view.height
-
-                        // Update popup position
-                        popupWindow.update(menuX, yOffset, -1, -1)
-                    }
+                    show()
                 } catch (e: Exception) {
-                    // If reflection fails, use default positioning
+                    // If show fails, log and try again
+                    android.util.Log.e("GroupsAdapter", "Error showing popup menu", e)
+                    try {
+                        show()
+                    } catch (e2: Exception) {
+                        android.util.Log.e("GroupsAdapter", "Error showing popup menu (retry)", e2)
+                    }
                 }
             }
+        } catch (e: Exception) {
+            // Log and silently handle any exceptions during popup menu creation/showing
+            android.util.Log.e("GroupsAdapter", "Error showing popup menu", e)
         }
     }
 
-    private fun executeItemMenuOperation(groupId: Int, callback: () -> Unit) {
-        selectedKeys.add(groupId)
-        callback()
-        selectedKeys.remove(groupId)
-    }
 }
