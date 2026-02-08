@@ -88,6 +88,13 @@ class SelectContactsAdapter(
         }
     }
 
+    private fun setCheckboxState(checked: Boolean, pos: Int) {
+        // Just set the checkbox state without triggering callbacks
+        itemViews[pos]?.let { view ->
+            itemBindingClass.bind(view).contactCheckbox.isChecked = checked
+        }
+    }
+
     fun updateContacts(newContacts: ArrayList<Contact>) {
         contacts = newContacts
         updateSelectedPositions()
@@ -106,7 +113,8 @@ class SelectContactsAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val contact = contacts[position]
         itemViews.put(position, holder.bindView(contact))
-        toggleItemSelection(selectedPositions.contains(position), position)
+        // Just set the checkbox state without triggering selection callbacks
+        setCheckboxState(selectedPositions.contains(position), position)
     }
 
     override fun getItemCount() = contacts.size

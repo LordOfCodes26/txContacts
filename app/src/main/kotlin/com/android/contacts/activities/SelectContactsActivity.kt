@@ -9,11 +9,6 @@ import android.util.TypedValue
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.view.ViewGroup
-import android.view.inputmethod.EditorInfo
-import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.RelativeLayout
 import com.reddit.indicatorfastscroll.FastScrollItemIndicator
 import com.goodwy.commons.extensions.*
 import com.goodwy.commons.helpers.ContactsHelper
@@ -81,22 +76,7 @@ class SelectContactsActivity : SimpleActivity() {
         setupTopAppBar(binding.selectContactsMenu, NavigationIcon.None, topBarColor = backgroundColor)
         
         // Explicitly remove navigation icon
-        val customToolbar = binding.selectContactsMenu.requireCustomToolbar()
-        customToolbar.navigationIcon = null
-        
-        // Ensure toolbar is full width by removing margins
-        customToolbar.onGlobalLayout {
-            val params = customToolbar.layoutParams
-            if (params is RelativeLayout.LayoutParams) {
-                params.width = ViewGroup.LayoutParams.MATCH_PARENT
-                params.marginEnd = 0
-                params.removeRule(RelativeLayout.ALIGN_PARENT_END)
-                customToolbar.layoutParams = params
-            } else if (params != null) {
-                params.width = ViewGroup.LayoutParams.MATCH_PARENT
-                customToolbar.layoutParams = params
-            }
-        }
+        binding.selectContactsMenu.requireCustomToolbar().navigationIcon = null
 
         // if selecting multiple contacts is disabled, react on first contact click and finish the activity
         contactClickCallback = if (allowSelectMultiple) {
@@ -296,6 +276,7 @@ class SelectContactsActivity : SimpleActivity() {
             }
             
             // Hide the menu button (overflow menu) by setting overflowIcon to null
+            // CustomToolbar will automatically adjust action buttons container margin
             customToolbar.overflowIcon = null
         }
     }

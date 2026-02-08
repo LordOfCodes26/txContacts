@@ -105,7 +105,7 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
         setContentView(binding.root)
         appLaunched(BuildConfig.APPLICATION_ID)
         setupOptionsMenu()
-        refreshMenuItems()
+        // Don't refresh menu items here - fragments aren't initialized yet
         setupEdgeToEdge(padBottomImeAndSystem = listOf(binding.tabBar))
 
         storeStateVariables()
@@ -169,6 +169,16 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
 
     override fun onResume() {
         super.onResume()
+        
+        // Collapse search if it was expanded when app was minimized
+        val customToolbar = binding.mainMenu.requireCustomToolbar()
+        if (customToolbar.isSearchExpanded) {
+            customToolbar.collapseSearch()
+            binding.mainMenu.isSearchOpen = false
+            getCurrentFragment()?.onSearchClosed()
+            searchQuery = ""
+        }
+        
         refreshMenuItems()
         // Cache color calculations to avoid repeated calls
         val properTextColor = getProperTextColor()
@@ -336,11 +346,20 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
     }
 
     private fun refreshMenuItems() {
+        // Don't update menu if ViewPager adapter isn't set yet (fragments don't exist)
+        if (binding.viewPager.adapter == null) {
+            return
+        }
+        
+        // Clear fragment cache to ensure we get the current fragments
+        clearFragmentCache()
+        
         val currentFragment = getCurrentFragment()
         val groupsFragment = getGroupsFragment()
         val favoritesFragment = getFavoritesFragment()
+        
         binding.mainMenu.requireCustomToolbar().menu.apply {
-            findItem(R.id.search).isVisible = /*!config.bottomNavigationBar*/ true
+            findItem(R.id.search).isVisible = currentFragment != groupsFragment
             findItem(R.id.sort).isVisible = currentFragment != groupsFragment
             findItem(R.id.filter).isVisible = currentFragment != groupsFragment
             findItem(R.id.select).isVisible = currentFragment != groupsFragment
@@ -564,7 +583,10 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
                 getAllFragments().forEach {
                     it?.finishActMode()
                 }
-                refreshMenuItems()
+                // Use post to ensure fragments are available before refreshing menu
+                binding.viewPager.post {
+                    refreshMenuItems()
+                }
             }
         })
 
@@ -714,14 +736,23 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
                 } else {
                     //On tab switch, the search string is not deleted
                     //It should not start on the first startup
-                    if (binding.mainMenu.isSearchOpen) getCurrentFragment()?.onSearchQueryChanged(binding.mainMenu.getCurrentQuery())
+                    if (binding.mainMenu.isSearchOpen) {
+                        // Use post to ensure ViewPager has updated before getting fragment
+                        binding.viewPager.post {
+                            getCurrentFragment()?.onSearchQueryChanged(binding.mainMenu.getCurrentQuery())
+                        }
+                    }
                 }
 
                 binding.viewPager.setCurrentItem(index, true)
+                // refreshMenuItems() will be called by onPageSelected callback
 
                 if (config.openSearch) {
-                    if (getCurrentFragment() is ContactsFragment) {
-                        binding.mainMenu.requestFocusAndShowKeyboard()
+                    // Use post to ensure ViewPager has updated before getting fragment
+                    binding.viewPager.post {
+                        if (getCurrentFragment() is ContactsFragment) {
+                            binding.mainMenu.requestFocusAndShowKeyboard()
+                        }
                     }
                 }
             }
@@ -877,24 +908,30 @@ class MainActivity : SimpleActivity(), RefreshContactsListener {
     }
     
     private fun getContactsFragment(): ContactsFragment? {
-        if (cachedContactsFragment == null) {
-            cachedContactsFragment = findViewById(R.id.contacts_fragment)
+        // Always try to find the fragment to handle cases where it might be recreated
+        val fragment = findViewById<ContactsFragment>(R.id.contacts_fragment)
+        if (fragment != null) {
+            cachedContactsFragment = fragment
         }
-        return cachedContactsFragment
+        return cachedContactsFragment ?: fragment
     }
 
     private fun getFavoritesFragment(): FavoritesFragment? {
-        if (cachedFavoritesFragment == null) {
-            cachedFavoritesFragment = findViewById(R.id.favorites_fragment)
+        // Always try to find the fragment to handle cases where it might be recreated
+        val fragment = findViewById<FavoritesFragment>(R.id.favorites_fragment)
+        if (fragment != null) {
+            cachedFavoritesFragment = fragment
         }
-        return cachedFavoritesFragment
+        return cachedFavoritesFragment ?: fragment
     }
 
     private fun getGroupsFragment(): GroupsFragment? {
-        if (cachedGroupsFragment == null) {
-            cachedGroupsFragment = findViewById(R.id.groups_fragment)
+        // Always try to find the fragment to handle cases where it might be recreated
+        val fragment = findViewById<GroupsFragment>(R.id.groups_fragment)
+        if (fragment != null) {
+            cachedGroupsFragment = fragment
         }
-        return cachedGroupsFragment
+        return cachedGroupsFragment ?: fragment
     }
     
     private fun clearFragmentCache() {

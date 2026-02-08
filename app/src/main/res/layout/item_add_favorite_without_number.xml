@@ -4,6 +4,8 @@
     android:id="@+id/contact_frame"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:paddingStart="@dimen/larger_margin"
+    android:paddingEnd="@dimen/normal_margin"
     android:background="?attr/selectableItemBackground"
     android:clickable="true"
     android:focusable="true">
@@ -13,7 +15,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:minHeight="@dimen/min_row_height"
-        android:paddingStart="@dimen/tiny_margin"
         android:paddingTop="@dimen/medium_margin"
         android:paddingBottom="@dimen/medium_margin">
 
@@ -22,7 +23,6 @@
             android:layout_width="@dimen/normal_icon_size"
             android:layout_height="@dimen/normal_icon_size"
             android:layout_centerVertical="true"
-            android:layout_marginStart="@dimen/small_margin"
             android:padding="@dimen/tiny_margin"
             android:src="@drawable/ic_person_vector" />
 
@@ -48,6 +48,7 @@
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
             android:background="@null"
+            android:layout_margin="@dimen/icon_padding"
             android:layout_centerVertical="true"
             android:clickable="false"
             android:gravity="center_vertical" />
